@@ -18,10 +18,13 @@ avatar: https://avatars2.githubusercontent.com/u/7941339?v=3&s=460
 
 # Duoshuo
 duoshuo_shortname: alphapigger
-duoshuo_share: true
 
 # Disqus
 disqus_shortname:
+
+# Jiathis share
+# jiathis: true
+# baidushare: true
 
 # Social links
 social:
