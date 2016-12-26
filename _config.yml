@@ -6,7 +6,7 @@
 title: coding & life
 subtitle:
 description: Technology make life better
-author: Steven Han
+author: kirk
 language: zh-Hans
 timezone:
 
@@ -17,7 +17,7 @@ timezone:
 avatar: https://avatars2.githubusercontent.com/u/7941339?v=3&s=460
 
 # Duoshuo
-duoshuo_shortname: alphapigger
+duoshuo_shortname: kirk
 
 # Disqus
 disqus_shortname:
@@ -28,17 +28,14 @@ disqus_shortname:
 
 # Social links
 social:
-    Github: https://github.com/alphapigger
+    Github: https://github.com/kirk
     Weibo: http://weibo.com/u/2478604292
 
 # Creative Commons 4.0 International License
-creative_commons: by-nc-sa 
+creative_commons: by-nc-sa
 
 # Google Analytics
 google_analytics: UA-67229568-1
-
-# 百度分析id
-baidu_analytics: dc3fa84fd7f983d929aa5eac3c13d731
 
 # Specify the date when the site was setup
 since: 2015
@@ -104,6 +101,6 @@ theme: next
 ## Docs: http://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: git@github.com:alphapigger/alphapigger.github.io.git
+  repo: git@github.com:kirk91/kirk91.github.io.git
   branch: master
   message:
