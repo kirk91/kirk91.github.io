@@ -104,3 +104,6 @@ deploy:
   repo: git@github.com:kirk91/kirk91.github.io.git
   branch: master
   message:
+
+marked:
+  gfm: false
