@@ -1,8 +1,9 @@
 title: divide two integers
-date: 2016-12-26 23:47:29
+date: 2016-12-27 23:07:01
 tags:
   - leetcode
   - algorithm
+categories: [algorithm]
 ---
 
 > 最近大脑越来越不听使唤，很多想法到嘴边了却突然忘了表达不出, 真要了老命, 忧伤30s...

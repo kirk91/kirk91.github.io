@@ -5,7 +5,7 @@
 # Site
 title: coding & life
 subtitle:
-description: Technology make life better
+description: don't stop learning forever
 author: kirk
 language: zh-Hans
 timezone:
@@ -17,7 +17,7 @@ timezone:
 avatar: https://avatars2.githubusercontent.com/u/7941339?v=3&s=460
 
 # Duoshuo
-duoshuo_shortname: kirk
+duoshuo_shortname: kirk91
 
 # Disqus
 disqus_shortname:
@@ -28,8 +28,8 @@ disqus_shortname:
 
 # Social links
 social:
-    Github: https://github.com/kirk
-    Weibo: http://weibo.com/u/2478604292
+    Github: https://github.com/kirk91
+    # Weibo: http://weibo.com/u/2478604292
 
 # Creative Commons 4.0 International License
 creative_commons: by-nc-sa
@@ -39,7 +39,6 @@ google_analytics: UA-67229568-1
 
 # Specify the date when the site was setup
 since: 2015
-
 
 
 # URL
