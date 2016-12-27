@@ -1,0 +1,20 @@
+language: node_js
+node_js:
+- stable
+branches:
+  only:
+    - master
+before_install:
+  - npm install -g hexo-cli
+install:
+  - npm install
+script:
+  - hexo clean
+  - hexo generate
+after_success:
+  - git config --global user.name "kirk91"
+  - git config --global user.email "kirk91.han@gmail.com"
+  - sed -i'' "s~git@github.com:kirk91/kirk91.github.io.git~https://${GH_TOKEN}:x-oauth-basic@github.com/kirk91/kirk91.github.io.git~" _config.yml
+  - hexo deploy
+dd:
+  secure: ENOroBQ2KZ46aLSnAGsRFqhsErGbk/UR+WPnp0Y2JYrO1PrUJDfTUD9iX0dPZgNT3hmcp2ccuSS+MZn0MhLIts+Ty2Y/fJewLlxrS1fKJEXbrkxmDGfeWbJcS+ApblK6yNZ/5xBlD8l5624jfQ4aqkp3VBUp8INYfBks87YqxTBedIQjLDnKThmc17+uuLHdRzl840YhX3eAoRTasNYJAjPVgBk8k0prC+q7z6pI4D9v1eNWDqIvH1BQB2N5bvu032pCKiqWcNuclZANYKCy12g/j+xaJGcgOm4IBZJ0RIb9xeygG6t69JpfiH1G0fV/NyKMJ5ccnAP/zhrbRGthE+0CZ6qUto4cCN0e3A8sSix4cmC6lxhjGy4O9nx7+NY1s3DzIJmiMtlYuBYJ93YFXYq2EZSQNgYnr1IS8zoa41kryz6Oz2jOsAsYTX4zKTAsmv4voty2PBv88iaC3JZW8gPXejMKUtztRGo00kC3aBUhk0VpYi6opmg1J+AhrxjXZ5Qt+RL+2vBcQBhMoT2ZWBUtG3OSQDaAobhjHbT/AyRwekc3QTwYmwHp4Vk4iNcdf62w8Yyef3p59qIFsa22+S5sfknNVaqth372T8UQ/Nca2f6pggUleEYUNpabVvusfpS9PVSD6Dkf0Hd6c1nARNHRxCgNM1TdamadYDfnrks=

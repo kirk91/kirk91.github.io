@@ -101,7 +101,7 @@ theme: next
 ## Docs: http://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: git@github.com:kirk91/kirk91.github.io.git
+  repo: git@github.com:kirk91/kirk91.github.io
   branch: master
   message:
 
