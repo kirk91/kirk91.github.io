@@ -1,2 +1,1 @@
-# alphapigger.github.io
-Alphapigger Blog
+Personal Blog
