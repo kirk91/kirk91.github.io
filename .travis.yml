@@ -16,6 +16,7 @@ script:
 after_success:
   - git config --global user.name "kirk91"
   - git config --global user.email "kirk91.han@gmail.com"
+  - echo ${GH_TOKEN}
   - sed -i'' "s~git@github.com:kirk91/kirk91.github.io.git~https://${GH_TOKEN}:x-oauth-basic@github.com/kirk91/kirk91.github.io.git~" _config.yml
   - cat _config.yml
   - hexo deploy
