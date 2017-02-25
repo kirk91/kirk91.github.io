@@ -45,8 +45,14 @@ since: 2015
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
 url: https://kirk91.github.io
 root: /
-permalink: :year/:month/:day/:title/
+# permalink: :year/:month/:day/:title/
+permalink: posts/:abbrlink/
 permalink_defaults:
+
+# abbrlink config
+abbrlink:
+  alg: crc32  # 算法：crc16(default) and crc32 
+  rep: hex    # 进制：dec(default) and hex
 
 # Directory
 source_dir: source
@@ -109,3 +115,12 @@ marked:
 
 sitemap:
   path: sitemap.xml
+
+plugins:
+  - hexo-footnotes
+
+nofollow:
+    enable: true
+    # exclude: # 例外的链接，可将友情链接放置此处
+    # - exclude1.com
+    # - exclude2.com
