@@ -1,11 +1,13 @@
+---
 title: 在centos7上编译安装nghttp2
-date: 2017-02-22 17:34:48
 tags:
-    - nghttp2
-    - centos
-    - ops
-categories: [nghttp2]
-
+  - nghttp2
+  - centos
+  - ops
+categories:
+  - nghttp2
+abbrlink: 28c07e17
+date: 2017-02-22 17:34:48
 ---
 
 > 最近有一个项目使用grpc对外提供服务, 在上线部署过程中遇到些问题，主要是http2流量的负载均衡和加解密。

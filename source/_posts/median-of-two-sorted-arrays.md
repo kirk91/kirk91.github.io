@@ -1,10 +1,12 @@
+---
 title: median of two sorted arrays
-date: 2016-12-30 18:53:33
 tags:
   - leetcode
   - algorithm
-categories: [algorithm]
-
+categories:
+  - algorithm
+abbrlink: d67af418
+date: 2016-12-30 18:53:33
 ---
 
 ## [问题](https://leetcode.com/problems/median-of-two-sorted-arrays/)

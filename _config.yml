@@ -116,8 +116,8 @@ marked:
 sitemap:
   path: sitemap.xml
 
-plugins:
-  - hexo-footnotes
+# plugins:
+  # - hexo-footnotes
 
 nofollow:
     enable: true
