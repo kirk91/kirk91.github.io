@@ -10,17 +10,9 @@ author: kirk
 language: zh-Hans
 timezone:
 
-# ================================================================
-# Next Theme configuration
-# ================================================================
-
-avatar: https://avatars2.githubusercontent.com/u/7941339?v=3&s=460
-
-# Duoshuo
-duoshuo_shortname: kirk91
 
 # Disqus
-disqus_shortname:
+disqus_shortname: kirk91
 
 # Jiathis share
 # jiathis: true
@@ -28,8 +20,8 @@ disqus_shortname:
 
 # Social links
 social:
-    Github: https://github.com/kirk91
-    # Weibo: http://weibo.com/u/2478604292
+    github: https://github.com/kirk91
+    mail: mailto:kirk91.han@gmail.com
 
 # Creative Commons 4.0 International License
 creative_commons: by-nc-sa
