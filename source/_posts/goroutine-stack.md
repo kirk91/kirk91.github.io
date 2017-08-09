@@ -222,7 +222,7 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	INT	$3
 
 	// 省略signal stack、morebuf和sched的处理
-    ...
+	...
 
 	// Call newstack on m->g0's stack.
 	MOVQ	m_g0(BX), BX
