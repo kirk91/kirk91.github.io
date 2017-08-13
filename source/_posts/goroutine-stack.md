@@ -287,7 +287,7 @@ func newstack(ctxt unsafe.Pointer) {
 // particular, no other G may be writing to gp's stack (e.g., via a
 // channel operation). If sync is false, copystack protects against
 // concurrent channel operations.
-func copystack(gp \*g, newsize uintptr, sync bool) {
+func copystack(gp *g, newsize uintptr, sync bool) {
 	if gp.syscallsp != 0 {
 		throw("stack growth not allowed in system call")
 	}
@@ -297,14 +297,37 @@ func copystack(gp \*g, newsize uintptr, sync bool) {
 	}
 	used := old.hi - gp.sched.sp
 
-	// 将数据拷贝到新栈
-	memmove(unsafe.Pointer(new.hi-ncopy), unsafe.Pointer(old.hi-ncopy), ncopy)
-
 	// 从缓存或堆分配新栈
 	new, newstkbar := stackalloc(uint32(newsize))
 	if stackPoisonCopy != 0 {
 		fillstack(new, 0xfd)
 	}
+
+	// Compute adjustment.
+	var adjinfo adjustinfo
+	adjinfo.old = old
+	adjinfo.delta = new.hi - old.hi
+
+	// Adjust sudogs, synchronizing with channel ops if necessary.
+	ncopy := used
+	if sync {
+		adjustsudogs(gp, &adjinfo)
+	} else {
+		// sudogs can point in to the stack. During concurrent
+		// shrinking, these areas may be written to. Find the
+		// highest such pointer so we can handle everything
+		// there and below carefully. (This shouldn't be far
+		// from the bottom of the stack, so there's little
+		// cost in handling everything below it carefully.)
+		adjinfo.sghi = findsghi(gp, old)
+
+		// Synchronize with channel ops and copy the part of
+		// the stack they may interact with.
+		ncopy -= syncadjustsudogs(gp, used, &adjinfo)
+	}
+
+	// 拷贝栈到新的位置
+	memmove(unsafe.Pointer(new.hi-ncopy), unsafe.Pointer(old.hi-ncopy), ncopy)
 
 	// 切换到新栈
 	gp.stack = new
