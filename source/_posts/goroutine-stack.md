@@ -17,6 +17,7 @@ date: 2017-07-29 17:48:51
 
 <!--more-->
 
+
 带着问题阅读，才能让阅读更加高效，首先让我们看下问题:
 
 1. *goroutine stack多大呢？是固定的还是动态变化的呢?*
@@ -24,6 +25,7 @@ date: 2017-07-29 17:48:51
 3. *对服务有什么影响吗？如何排查栈扩容缩容带来的问题呢?*
 
 问题明确了，我们就开始往下扯呗。
+
 
 ## 栈大小
 
@@ -396,6 +398,7 @@ func shrinkstack(gp *g) {
 
 上面的所有常量和代码，都是基于Linux x86_64架构，go 1.8.3版本的。
 
+
 ## 参考文档
 
 1. <https://blog.cloudflare.com/how-stacks-are-handled-in-go/>
@@ -404,3 +407,9 @@ func shrinkstack(gp *g) {
 4. <https://en.wikipedia.org/wiki/Thread_(computing)>
 5. <https://golang.org/doc/asm>
 6. <https://0xax.github.io/>
+
+## 变更记录
+
+- 2017-08-13
+
+  修复goroutine栈内存布局图片中的地址标注，感谢[@baozh](https://github.com/baozh)的指正。
