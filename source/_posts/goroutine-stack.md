@@ -17,6 +17,7 @@ date: 2017-07-29 17:48:51
 
 <!--more-->
 
+
 带着问题阅读，才能让阅读更加高效，首先让我们看下问题:
 
 1. *goroutine stack多大呢？是固定的还是动态变化的呢?*
@@ -25,6 +26,7 @@ date: 2017-07-29 17:48:51
 
 问题明确了，我们就开始往下扯呗。
 
+
 ## 栈大小
 
 在了解协程栈之前，我们先看下传统的Linux进程内存布局:
@@ -32,11 +34,11 @@ date: 2017-07-29 17:48:51
 ![](/images/linux-process-memory-layout.png)
 
 user stack的大小是固定的，Linux中默认为8192KB，运行时内存占用超过上限，程序会崩溃掉并报告segment错误。
-为了修复这个问题，我们可以调大内核参数中的stack size, 或者在创建线程时显式地传入所需要大小的内存块。 
+为了修复这个问题，我们可以调大内核参数中的stack size, 或者在创建线程时显式地传入所需要大小的内存块。
 这两种方案都有自己的优缺点, 前者比较简单但会影响到系统内所有的thread，后者需要开发者精确计算每个thread的大小, 负担比较高。
 
 有没有办法既不影响所有thread又不会给开发者增加太多的负担呢? 答案当然是有的，比如: 我们可以在函数调用处插桩，
-每次调用的时候检查当前栈的空间是否能够满足新函数的执行，满足的话直接执行，否则创建新的栈空间并将老的栈拷贝到新的栈然后再执行。 这个想法听起来很fancy & simple, 
+每次调用的时候检查当前栈的空间是否能够满足新函数的执行，满足的话直接执行，否则创建新的栈空间并将老的栈拷贝到新的栈然后再执行。 这个想法听起来很fancy & simple,
 但当前的Linux thread模型却不能满足，实现的话只能够在用户空间实现，并且有不小的难度。
 
 go作为一门21世纪的现代语言，定位于简单高效，充分利用多核优势，解放工程师，自然不能够少了这个特性。它使用内置的运行时runtime优雅地解决了这个问题，
@@ -73,58 +75,76 @@ package main
 
 func main() {
 	a, b := 1, 2
-    _ = add1(a, b)
+	_ = add1(a, b)
 	_ = add2(a, b)
 }
 
 func add1(x, y int) int {
-    return x + y
+	return x + y
 }
 
 func add2(x, y int) int {
 	_ = make([]byte, 200)
 	return x + y
 }
-
 ```
 
 禁用优化和内敛进行编译 `go tool compile -N -l -S stack.go > stack.s` , 部分汇编代码如下:
 
 ```assembly
 "".main t=1 size=112 args=0x0 locals=0x30
-	0x0000 00000 (stack.go:3)	TEXT	"".main(SB), $48-0  ; 栈大小为48，无参数
-	0x0000 00000 (stack.go:3)	MOVQ	(TLS), CX           ; 通过thread local storage获取当前g(g为goroutine的的数据结构)
-	0x0009 00009 (stack.go:3)	CMPQ	SP, 16(CX)          ; 比较SP和g.stackguard0
-	0x000d 00013 (stack.go:3)	JLS	105                     ; 小于g.stackguard0，jump到105执行栈的扩容
-	0x000f 00015 (stack.go:3)	SUBQ	$48, SP             ; 继续执行
+	// 栈大小为48，无参数
+	0x0000 00000 (stack.go:3)	TEXT	"".main(SB), $48-0
+	// 通过thread local storage获取当前g(g为goroutine的的数据结构)
+	0x0000 00000 (stack.go:3)	MOVQ	(TLS), CX
+	// 比较SP和g.stackguard0
+	0x0009 00009 (stack.go:3)	CMPQ	SP, 16(CX)
+	// 小于g.stackguard0，jump到105执行栈的扩容
+	0x000d 00013 (stack.go:3)	JLS	105
+	// 继续执行
+	0x000f 00015 (stack.go:3)	SUBQ	$48, SP
 	0x0013 00019 (stack.go:3)	MOVQ	BP, 40(SP)
 	0x0018 00024 (stack.go:3)	LEAQ	40(SP), BP
-	0x001d 00029 (stack.go:3)	FUNCDATA	$0, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)  ; 用于垃圾回收
+	// 用于垃圾回收
+	0x001d 00029 (stack.go:3)	FUNCDATA	$0, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)
 	0x001d 00029 (stack.go:3)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)
 	0x001d 00029 (stack.go:4)	MOVQ	$1, "".a+32(SP)
 	0x0026 00038 (stack.go:4)	MOVQ	$2, "".b+24(SP)
-	0x002f 00047 (stack.go:5)	MOVQ	"".a+32(SP), AX     ; 将a放入AX寄存器
-	0x0034 00052 (stack.go:5)	MOVQ	AX, (SP)            ; 参数a压栈
-	0x0038 00056 (stack.go:5)	MOVQ	"".b+24(SP), AX     ; 将b放入AX寄存器
-	0x003d 00061 (stack.go:5)	MOVQ	AX, 8(SP)           ; 参数b压栈
+	// 将a放入AX寄存器
+	0x002f 00047 (stack.go:5)	MOVQ	"".a+32(SP), AX
+	// 参数a压栈
+	0x0034 00052 (stack.go:5)	MOVQ	AX, (SP)
+	// 将b放入AX寄存器
+	0x0038 00056 (stack.go:5)	MOVQ	"".b+24(SP), AX
+	// 参数b压栈
+	0x003d 00061 (stack.go:5)	MOVQ	AX, 8(SP)
 	0x0042 00066 (stack.go:5)	PCDATA	$0, $0
-	0x0042 00066 (stack.go:5)	CALL	"".add1(SB)         ; 调用add1
-	0x0047 00071 (stack.go:6)	MOVQ	"".a+32(SP), AX     ; 将a放入AX寄存器
-	0x004c 00076 (stack.go:6)	MOVQ	AX, (SP)            ; 参数a压栈
-	0x0050 00080 (stack.go:6)	MOVQ	"".b+24(SP), AX     ; 将b放入AX寄存器
-	0x0055 00085 (stack.go:6)	MOVQ	AX, 8(SP)           ; 参数b压栈
+	// 调用add1
+	0x0042 00066 (stack.go:5)	CALL	"".add1(SB)
+	// 将a放入AX寄存器
+	0x0047 00071 (stack.go:6)	MOVQ	"".a+32(SP), AX
+	// 参数a压栈
+	0x004c 00076 (stack.go:6)	MOVQ	AX, (SP)
+	// 将b放入AX寄存器
+	0x0050 00080 (stack.go:6)	MOVQ	"".b+24(SP), AX
+	// 参数b压栈
+	0x0055 00085 (stack.go:6)	MOVQ	AX, 8(SP)
 	0x005a 00090 (stack.go:6)	PCDATA	$0, $0
-	0x005a 00090 (stack.go:6)	CALL	"".add2(SB)         ; 调用add2
+	// 调用add2
+	0x005a 00090 (stack.go:6)	CALL	"".add2(SB)
 	0x005f 00095 (stack.go:7)	MOVQ	40(SP), BP
 	0x0064 00100 (stack.go:7)	ADDQ	$48, SP
 	0x0068 00104 (stack.go:7)	RET
 	0x0069 00105 (stack.go:7)	NOP
 	0x0069 00105 (stack.go:3)	PCDATA	$0, $-1
-	0x0069 00105 (stack.go:3)	CALL	runtime.morestack_noctxt(SB)  ; 调用runtime.morestack_noctxt执行栈扩容
-	0x006e 00110 (stack.go:3)	JMP	0                   ; 返回到函数开始处继续执行
+	// 调用runtime.morestack_noctxt执行栈扩容
+	0x0069 00105 (stack.go:3)	CALL	runtime.morestack_noctxt(SB)
+	// 返回到函数开始处继续执行
+	0x006e 00110 (stack.go:3)	JMP	0
     ...
 "".add1 t=1 size=28 args=0x18 locals=0x0
-	0x0000 00000 (stack.go:9)	TEXT	"".add1(SB), $0-24  ; 栈大小为0，参数为24字节, 栈帧小于StackSmall不进行栈空间判断直接执行
+	// 栈大小为0，参数为24字节, 栈帧小于StackSmall不进行栈空间判断直接执行
+	0x0000 00000 (stack.go:9)	TEXT	"".add1(SB), $0-24
 	0x0000 00000 (stack.go:9)	FUNCDATA	$0, gclocals·54241e171da8af6ae173d69da0236748(SB)
 	0x0000 00000 (stack.go:9)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)
 	0x0000 00000 (stack.go:9)	MOVQ	$0, "".~r2+24(FP)
@@ -134,12 +154,18 @@ func add2(x, y int) int {
 	0x0016 00022 (stack.go:10)	MOVQ	AX, "".~r2+24(FP)
 	0x001b 00027 (stack.go:10)	RET
 "".add2 t=1 size=151 args=0x18 locals=0xd0
-	0x0000 00000 (stack.go:13)	TEXT	"".add2(SB), $208-24  ; 栈大小为208字节，参数为24字节
-	0x0000 00000 (stack.go:13)	MOVQ	(TLS), CX             ; 获取当前g
-	0x0009 00009 (stack.go:13)	LEAQ	-80(SP), AX           ; 栈大小大于StackSmall, 计算 SP - FramSzie + StackSmall 并放入AX寄存器
-	0x000e 00014 (stack.go:13)	CMPQ	AX, 16(CX)            ; 比较上面计算出来的值和g.stackguard0
-	0x0012 00018 (stack.go:13)	JLS	141                   ; 小于g.stackguard0, jump到141执行栈的扩容
-	0x0014 00020 (stack.go:13)	SUBQ	$208, SP              ; 继续执行
+	// 栈大小为208字节，参数为24字节
+	0x0000 00000 (stack.go:13)	TEXT	"".add2(SB), $208-24
+	// 获取当前g
+	0x0000 00000 (stack.go:13)	MOVQ	(TLS), CX
+	// 栈大小大于StackSmall, 计算 SP - FramSzie + StackSmall 并放入AX寄存器
+	0x0009 00009 (stack.go:13)	LEAQ	-80(SP), AX
+	// 比较上面计算出来的值和g.stackguard0
+	0x000e 00014 (stack.go:13)	CMPQ	AX, 16(CX)
+	// 小于g.stackguard0, jump到141执行栈的扩容
+	0x0012 00018 (stack.go:13)	JLS	141
+	// 继续执行
+	0x0014 00020 (stack.go:13)	SUBQ	$208, SP
 	0x001b 00027 (stack.go:13)	MOVQ	BP, 200(SP)
 	0x0023 00035 (stack.go:13)	LEAQ	200(SP), BP
 	0x002b 00043 (stack.go:13)	FUNCDATA	$0, gclocals·54241e171da8af6ae173d69da0236748(SB)
@@ -161,8 +187,10 @@ func add2(x, y int) int {
 	0x008c 00140 (stack.go:15)	RET
 	0x008d 00141 (stack.go:15)	NOP
 	0x008d 00141 (stack.go:13)	PCDATA	$0, $-1
-	0x008d 00141 (stack.go:13)	CALL	runtime.morestack_noctxt(SB)  ; 调用runtime.morestack_noctxt完成栈扩容
-	0x0092 00146 (stack.go:13)	JMP	0                                 ; jump到函数开始的地方继续执行
+	// 调用runtime.morestack_noctxt完成栈扩容
+	0x008d 00141 (stack.go:13)	CALL	runtime.morestack_noctxt(SB)
+	// jump到函数开始的地方继续执行
+	0x0092 00146 (stack.go:13)	JMP	0
     ...
 ```
 通过上面的汇编码，可以看到当被调用函数栈帧小于StackSmall的时候没有执行栈空间大小判断而是直接执行，在一定程度上优化了小函数的调用。
@@ -194,14 +222,16 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	CALL	runtime·badmorestackg0(SB)
 	INT	$3
 
-	...  ; 省略signal stack、morebuf和sched的处理
+	// 省略signal stack、morebuf和sched的处理
+	...
 
 	// Call newstack on m->g0's stack.
 	MOVQ	m_g0(BX), BX
 	MOVQ	BX, g(CX)
 	MOVQ	(g_sched+gobuf_sp)(BX), SP
 	PUSHQ	DX	// ctxt argument
-	CALL	runtime·newstack(SB)    ; 调用newstack
+	// 调用runtime.newstack完成栈扩容
+	CALL	runtime·newstack(SB)
 	MOVQ	$0, 0x1003	// crash if newstack returns
 	POPQ	DX	// keep balance check happy
 	RET
@@ -209,7 +239,8 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 // morestack but not preserving ctxt.
 TEXT runtime·morestack_noctxt(SB),NOSPLIT,$0
 	MOVL	$0, DX
-	JMP	runtime·morestack(SB)       ; 调用morestack
+	// 调用morestack
+	JMP	runtime·morestack(SB)
 
 ```
 newstack是用go实现的，可读性很高也很有意思，大家有空可读读，基本过程就是分配一个2x大小的新栈，
@@ -256,7 +287,7 @@ func newstack(ctxt unsafe.Pointer) {
 // particular, no other G may be writing to gp's stack (e.g., via a
 // channel operation). If sync is false, copystack protects against
 // concurrent channel operations.
-func copystack(gp \*g, newsize uintptr, sync bool) {
+func copystack(gp *g, newsize uintptr, sync bool) {
 	if gp.syscallsp != 0 {
 		throw("stack growth not allowed in system call")
 	}
@@ -266,14 +297,37 @@ func copystack(gp \*g, newsize uintptr, sync bool) {
 	}
 	used := old.hi - gp.sched.sp
 
-	// 将数据拷贝到新栈
-	memmove(unsafe.Pointer(new.hi-ncopy), unsafe.Pointer(old.hi-ncopy), ncopy)
-
 	// 从缓存或堆分配新栈
 	new, newstkbar := stackalloc(uint32(newsize))
 	if stackPoisonCopy != 0 {
 		fillstack(new, 0xfd)
 	}
+
+	// Compute adjustment.
+	var adjinfo adjustinfo
+	adjinfo.old = old
+	adjinfo.delta = new.hi - old.hi
+
+	// Adjust sudogs, synchronizing with channel ops if necessary.
+	ncopy := used
+	if sync {
+		adjustsudogs(gp, &adjinfo)
+	} else {
+		// sudogs can point in to the stack. During concurrent
+		// shrinking, these areas may be written to. Find the
+		// highest such pointer so we can handle everything
+		// there and below carefully. (This shouldn't be far
+		// from the bottom of the stack, so there's little
+		// cost in handling everything below it carefully.)
+		adjinfo.sghi = findsghi(gp, old)
+
+		// Synchronize with channel ops and copy the part of
+		// the stack they may interact with.
+		ncopy -= syncadjustsudogs(gp, used, &adjinfo)
+	}
+
+	// 拷贝栈到新的位置
+	memmove(unsafe.Pointer(new.hi-ncopy), unsafe.Pointer(old.hi-ncopy), ncopy)
 
 	// 切换到新栈
 	gp.stack = new
@@ -367,6 +421,7 @@ func shrinkstack(gp *g) {
 
 上面的所有常量和代码，都是基于Linux x86_64架构，go 1.8.3版本的。
 
+
 ## 参考文档
 
 1. <https://blog.cloudflare.com/how-stacks-are-handled-in-go/>
@@ -375,3 +430,9 @@ func shrinkstack(gp *g) {
 4. <https://en.wikipedia.org/wiki/Thread_(computing)>
 5. <https://golang.org/doc/asm>
 6. <https://0xax.github.io/>
+
+## 变更记录
+
+- 2017-08-13
+
+  修复goroutine栈内存布局图片中的地址标注，感谢[@baozh](https://github.com/baozh)的指正。
