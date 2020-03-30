@@ -40,7 +40,7 @@ date: 2020-03-26 18:46:00
 4. **Redis 节点抓包解析**
 
     在可能存在热 key 的节点上(流量倾斜判断)，通过 tcpdump 抓取一段时间内的流量并上报，然后由一个外部的程序进行解析、聚合和计算。该方案无需侵入现有的 SDK 或者 Proxy 中间件，开发维护成本可控，但也存在缺点的，具体是热 key 节点的网络流量和系统负载已经比较高了，抓包可能会情况进一步恶化。
-    
+
 > Redis 的 Monitor 命令不在考虑之列，原因是开销比较大，单个 monitor 的 client 会降低 50% 的系统吞吐，更多详情见: https://redis.io/commands/monitor
 
 
@@ -94,10 +94,7 @@ Hotkey Collector 内部结构如下所示，包含 LFU Counter、Syncer 和 Etra
 最终的方案如下，已略去无关细节:
 ![](https://i.imgur.com/ZbmFBaE.png)
 
-实现上来说，每个集群会有一个全局的 *Hotkey Collector*，每个 client 上有自己独立的 *Counter*，*Counter* 依旧采用前面提到的 [LFU] 算法，*Collector*  会定时地去收集每个 *Counter* 的数据并进行聚合，聚合的时候不会使用真实的计数，而是使用基于对数的概率计数，实现上与 [redis lfu] 类似，主要考虑的点有两个:
-
-1. 系统是为了定位哪些是访问频繁的 key，而不需要知道具体的访问次数，不是计数器
-2. 保持与 redis 扫描出来的热 key 结果和含义类似，不创造新的概念，降低用户接受成本
+实现上来说，每个集群会有一个全局的 *Hotkey Collector*，每个 client 上有自己独立的 *Counter*，*Counter* 依旧采用前面提到的 [LFU] 算法，*Collector*  会定时地去收集每个 *Counter* 的数据并进行聚合，聚合的时候不会使用真实的计数，而是使用[概率计数]，并且为了适应访问模式的变化 counter 的值会随着时间衰减，整体上与 [redis lfu] 非常类似。
 
 下面是一个生产环境的真实例子，展示了近一段时间内比较热的 key:
 ![](https://i.imgur.com/NT8pOIN.png)
@@ -106,7 +103,7 @@ Hotkey Collector 内部结构如下所示，包含 LFU Counter、Syncer 和 Etra
 
 1. 默认使用的 log factor 因子是 10，counter 值每分钟衰减一半
 2. Collector 默认的容量是 32，只记录请求频次最高的 32 个 key
-3. 具体 counter 所能够代表的访问次数参见 [Using Redis as an LRU cache] 一文末尾表格
+3. 输出的结果与 `redis-cli --hotkeys` 非常类似，counter 具体含义可以参考 [Using Redis as an LRU cache] 一文末尾表格
 
 
 ## 后续的规划
@@ -123,3 +120,4 @@ Hotkey Collector 内部结构如下所示，包含 LFU Counter、Syncer 和 Etra
 [redis lfu]: http://antirez.com/news/109
 [Using Redis as an LRU cache]: https://redis.io/topics/lru-cache
 [server-assisted client side caching]: https://redis.io/topics/client-side-caching
+[概率计数]: https://en.wikipedia.org/wiki/Approximate_counting_algorithm
