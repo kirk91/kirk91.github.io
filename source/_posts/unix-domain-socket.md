@@ -9,6 +9,10 @@ abbrlink: e850c11
 date: 2020-09-05 22:06:00
 ---
 
+平常工作中，大家或多或少都听过或者使用过 Unix Domain Socket, 但可能没有系统的总结梳理过，比如与 TCP/UDP Socket 差别在哪里，除了普通的数据传递还有哪些玩法，能否利用 tcpdump 抓取流量呢? 该文章主要从 Unix Domain Socket 是什么、怎么用、性能如何以及如何抓包排障这些进度进行介绍。
+
+<!--more-->
+
 ## 是什么
 
 Unix Domain Socket 也叫做 IPC Socket，与其他 IPC 的机制 Signal、Pipe、FIFO、Message Queue、Semaphore 和 Shared Memory 类似，都可以用于同一台机器上不同进程间的数据传输。
