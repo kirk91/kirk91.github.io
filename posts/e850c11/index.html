@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!--Description-->
+  
+  <meta name="description" content="平常工作中，大家或多或少都听过或者使用过 Unix Domain Socket, 但可能没有系统的总结梳理过，比如与 TCP/UDP Socket
+差别在哪里，除了普通的数据传递还有哪些玩法，能否利用 tcpdump 抓取流量呢? 该文章主要从是什么、怎么用、性能如何和抓包排障等角度进行介绍。">
+  
+
+  <!--Author-->
+  
+  <meta name="author" content="kirk">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="Unix Domain Socket">
+  
+  <!--Open Graph Description-->
+  
+      <meta property="og:description" content="平常工作中，大家或多或少都听过或者使用过 Unix Domain Socket, 但可能没有系统的总结梳理过，比如与 TCP/UDP Socket
+差别在哪里，除了普通的数据传递还有哪些玩法，能否利用 tcpdump 抓取流量呢? 该文章主要从是什么、怎么用、性能如何和抓包排障等角度进行介绍。">
+  
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="coding &amp; life">
+  <!--Type page-->
+  
+      <meta property="og:type" content="article">
+  
+  <!--Page Cover-->
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Title -->
+  
+  <title>Unix Domain Socket - coding &amp; life</title>
+
+
+  <link rel="shortcut icon" href="https://hexo.io/icon/favicon-96x96.png">
+
+  <!-- Custom CSS/Sass -->
+  
+<link rel="stylesheet" href="/css/style.css">
+
+
+  <!----------------------------
+  https://github.com/GallenHu/hexo-theme-Daily
+
+ _____            _   _
+|  __ \          (_) | |
+| |  | |   __ _   _  | |  _   _
+| |  | |  / _` | | | | | | | | |
+| |__| | | (_| | | | | | | |_| |
+|_____/   \__,_| |_| |_|  \__, |
+                          __/ |
+                         |___/
+
+    --------------------------->
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+<body>
+
+  <!-- Nav -->
+  <header class="site-header">
+  <div class="header-inside">
+    <div class="logo">
+      <a href="/" rel="home">
+        
+        <img src="https://hexo.io/logo.svg" alt="coding & life" height="60">
+        
+      </a>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse">
+        <ul class="navbar-nav">
+          
+          
+            <li>
+              <a href="/.">
+                
+                  home
+                
+              </a>
+            </li>
+          
+            <li>
+              <a href="/archives">
+                
+                  archive
+                
+              </a>
+            </li>
+          
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
+    </nav>
+    <div class="button-wrap">
+      <button class="menu-toggle">Primary Menu</button>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Main Content -->
+  <div class="content-area">
+  <div class="post">
+    <!-- Post Content -->
+    <div class="container">
+      <article>
+        <!-- Title date & tags -->
+        <div class="post-header">
+          <h1 class="entry-title">
+            Unix Domain Socket
+            
+          </h1>
+          <p class="posted-on">
+          2020-09-05
+          </p>
+          <div class="tags-links">
+            
+              
+                <a href="/tags/socket/" rel="tag">
+                  socket
+                </a>
+              
+                <a href="/tags/network/" rel="tag">
+                  network
+                </a>
+              
+            
+          </div>
+        </div>
+        <!-- Post Main Content -->
+        <div class="entry-content ">
+          <p>平常工作中，大家或多或少都听过或者使用过 Unix Domain Socket, 但可能没有系统的总结梳理过，比如与 TCP/UDP Socket 差别在哪里，除了普通的数据传递还有哪些玩法，能否利用 tcpdump 抓取流量呢? 该文章主要从是什么、怎么用、性能如何和抓包排障等角度进行介绍。</p>
+<a id="more"></a>
+<h2 id="是什么"><a href="#是什么" class="headerlink" title="是什么"></a>是什么</h2><p>Unix Domain Socket 也叫做 IPC Socket，与其他 IPC 的机制 Signal、Pipe、FIFO、Message Queue、Semaphore 和 Shared Memory 类似，都可以用于同一台机器上不同进程间的数据传输。</p>
+<p>接口上与我们平常接触到的 Internet Socket 基本相同，用户如果想从 TCP/UDP Socket 切换到 Unix Domian Socket，代码几乎不用做变更。不过，不同的是其底层实现不依赖任何 Network Protocol，发送数据时发送方直接将数据写到接收方的 Socket Buffer, 而不会涉及到任何 TCP/IP 头部添加、校验和计算、Packet 分段、Packet 确认、窗口变化以及路由选择等操作，理论上开销更小，有着更好的性能。</p>
+<p>另外，Unix Domain Socket 不使用 Internet Socket 的 ip:port 作为地址，而是用文件系统作为地址命名空间，比如 /var/run/docker.sock 是 redis-server 监听的地址，redis-cli 可以指定该地址与 server 建立连接。</p>
+<h2 id="如何用"><a href="#如何用" class="headerlink" title="如何用"></a>如何用</h2><h3 id="普通收发"><a href="#普通收发" class="headerlink" title="普通收发"></a>普通收发</h3><p>使用方式上与平常接触的 TCP/UDP Socket 基本一致，下面是一些具体的例子:</p>
+<h4 id="HTTP"><a href="#HTTP" class="headerlink" title="HTTP"></a>HTTP</h4><script src="//gist.github.com/kirk91/7569d02256566b0179963a35a63f92eb.js"></script>
+<p>在一个终端启动上面的程序:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> go run http_unix.go</span></span><br></pre></td></tr></table></figure>
+<p>在另外一个终端上用 curl 进行测试:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># query over the unix socket</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl --unix-socket /tmp/http-unix.sock http://unix</span></span><br><span class="line">Hello, world!</span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl --unix-socket /tmp/http-unix.sock http://unix/path1</span></span><br><span class="line">Hello, world!</span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl --unix-socket /tmp/http-unix.sock http://unix/path2</span></span><br><span class="line">Hello, world!</span><br></pre></td></tr></table></figure>
+<h4 id="TCP"><a href="#TCP" class="headerlink" title="TCP"></a>TCP</h4><script src="//gist.github.com/kirk91/a6c8f6d07c754980b69ffc42127812a2.js"></script>
+<p>在一个终端上启动上面的程序:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> go run tcp_unix.go</span></span><br></pre></td></tr></table></figure>
+<p>在另外一个终端上使用 netcat 进行测试:</p>
+<blockquote>
+<p>netcat 有两个版本，分别是 netcat-traditional 和 netcat-openbsd，traditional 版本不支持 Unix Domain Socket(-U)，测试时要首先确认自己安装的是 openbsd 重写的。</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># connect to the socket</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> nc -U /tmp/tcp-unix.sock</span></span><br><span class="line">hello</span><br><span class="line">hello</span><br><span class="line">hi</span><br><span class="line">hi</span><br><span class="line">bla bla bla</span><br><span class="line">bla bla bla</span><br><span class="line">^C</span><br></pre></td></tr></table></figure>
+<p>认真查看上面的两段代码，会发现每次在执行 <code>net.Listen</code> 前都会先执行 <code>os.Remove(udsPath)</code> 把 socket 文件删除掉，初次看到的话应该会感到非常奇怪，会好奇为啥要这么玩，是不是写错了? </p>
+<p>其实不是写错了，这么写是有意为之，原因是 Unix Socket 不像 Internet Socket, 进程退出(包括 Crash)时操作系统不会自动清理掉创建的 Socket 文件，为了保证本进程能够成功监听，必须确保先前创建的 Socket 文件被删除掉，否则会一直报 <code>bind: address already in use</code> 的错误。</p>
+<p>除此之外还可能会有权限的问题，比如在 Linux 当前的实现中，要求 Socket 的创建者需要拥有该文件所在目录的 write 和 search(execute) 权限，连接到 Socket 的一方需要有该文件的 write 权限，否则会抛出 Permission denied 的错误。</p>
+<p>因此，如果使用文件系统作为地址命名空间的话，都需要处理这两种情况，不然程序会抛出错误无法运行。但是，在 Linux 上有第二种选择，可以使用 Abstract Socket Namspace。具体来说，Linux 额外开发了一个叫做 Abstract Namespace 的特性，它允许我们创建一个 Socket 而不用绑定文件，甚至在进程退出(无引用)时会被自动清理掉，下面是一个具体的例子:</p>
+<script src="//gist.github.com/kirk91/688cf5a2b8fb8dcc879f420552ff827f.js"></script>
+<p>开启一个终端执行上面程序:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> go run tcp_abstract_unix.go</span></span><br></pre></td></tr></table></figure>
+<p>另开一个终端用 socat 进行测试:</p>
+<blockquote>
+<ul>
+<li>netcat 不支持 abstract socket</li>
+<li>socat 介绍 https://medium.com/@copyconstruct/socat-29453e9fc8a6</li>
+</ul>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># show tcp-unix.sock</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ss -xlp | grep tcp-unix.sock</span></span><br><span class="line">u_str LISTEN 0 16384  @tcp-unix.sock 136766257 * 0 users:(("tcp_abstract_un",pid=1878602,fd=3))</span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># connect to the abstract socket</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> socat - ABSTRACT-CONNECT:tcp-unix.sock</span></span><br><span class="line">hello</span><br><span class="line">hello</span><br><span class="line">world</span><br><span class="line">world</span><br><span class="line">😊</span><br><span class="line">😊</span><br><span class="line">^C</span><br></pre></td></tr></table></figure>
+<h3 id="FD-传递"><a href="#FD-传递" class="headerlink" title="FD 传递"></a>FD 传递</h3><p>Unix Socket 除了能够传输普通的数据外，还能够在完全不相关(非父子)的进程间传递 FD, 很多开源的项目 HAProxy、Nginx 和 Envoy 都有用到该特性。下面是一个将 HTTP Listener 通过 Unix Socket 从一个进程传递到另外一个进程的例子:</p>
+<ul>
+<li>fd_send.go: 发送方</li>
+<li>fd_receive.go: 接受方</li>
+</ul>
+<script src="//gist.github.com/kirk91/ec25703848172e8f56f671e0e1c73751.js"></script>
+<p>开启两个终端分别启动 fd_send.go 和 fd_receive.go 程序:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> go run fd_send.go</span></span><br><span class="line">2020/08/10 19:02:19 Server is listening on 127.0.0.1:8080 ...</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> go run fd_receive.go</span></span><br><span class="line">2020/08/10 19:17:58 Wait receiving listener ...</span><br></pre></td></tr></table></figure>
+<p>另外开启一个终端进行测试:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># query, receive the response from server1</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl http://localhost:8080</span></span><br><span class="line">[server1] Hello, world!</span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># trigger passing file descriptor</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl http://localhost:8080/passfd</span></span><br><span class="line">Success</span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># query again, receive the response from server2</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl http://localhost:8080</span></span><br><span class="line">[server2] Hello, world!</span><br></pre></td></tr></table></figure>
+<p><img src="https://i.imgur.com/wqCSh9n.png" alt=""></p>
+<blockquote>
+<ol>
+<li>Unix Socket 不支持 SO_REUSEPORT, 多个进程没法直接监听同一 Socket</li>
+<li>FD 传递，并不是将 FD 的值传递给另一个进程，而是传递的内核同一 File 结构的引用，两者都指向内核 Open File Table 的同一个 File, 两个 FD 的值不要求一样，并且在现实中大概率是不同的</li>
+</ol>
+</blockquote>
+<p>从测试结果看，HTTP Listener 的 FD 成功的传递到了接受方，并且接受方能够正常处理用户请求。之所以能够通过 Unix Socket 能够传递 FD，是因为数据发送调用了 sendmg 接口，其参数 msg 支持携带辅助数据，下面是他们的签名:</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ssize_t</span> sendmsg(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct msghdr *msg, <span class="keyword">int</span> flags);</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">msghdr</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span>         *msg_name;       <span class="comment">/* optional address */</span></span><br><span class="line">    <span class="keyword">socklen_t</span>     msg_namelen;    <span class="comment">/* size of address */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> *<span class="title">msg_iov</span>;</span>        <span class="comment">/* scatter/gather array */</span></span><br><span class="line">    <span class="keyword">size_t</span>        msg_iovlen;     <span class="comment">/* # elements in msg_iov */</span></span><br><span class="line">    <span class="keyword">void</span>         *msg_control;    <span class="comment">/* ancillary data, see below */</span></span><br><span class="line">    <span class="keyword">size_t</span>        msg_controllen; <span class="comment">/* ancillary data buffer len */</span></span><br><span class="line">    <span class="keyword">int</span>           msg_flags;      <span class="comment">/* flags on received message */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>其中 msg_control 和 msg_controllen 是用来传递辅助数据的，msg_control 对应的数据结构定义如下:</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cmsghdr</span> &#123;</span></span><br><span class="line">    <span class="keyword">socklen_t</span> cmsg_len;    <span class="comment">/* data byte count, including header */</span></span><br><span class="line">    <span class="keyword">int</span>       cmsg_level;  <span class="comment">/* originating protocol */</span></span><br><span class="line">    <span class="keyword">int</span>       cmsg_type;   <span class="comment">/* protocol-specific type */</span></span><br><span class="line">    <span class="comment">/* followed by */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> cmsg_data[];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>其各参数的含义和用法可以参考 https://man7.org/linux/man-pages/man3/cmsg.3.html</p>
+<p>最后，除了传递 FD 外，在 Linux 当前实现中还支持传递 credentials 和 selinux context, 服务端可以用来验证客户端的身份，由于涉及到的东西比较多，这里不再详细描述，具体用法参见 https://www.man7.org/linux/man-pages/man7/unix.7.html</p>
+<h2 id="性能"><a href="#性能" class="headerlink" title="性能"></a>性能</h2><p>前面提到 Unix Domain Socket 发送数据的时候直接将数据写到接收方的 Socket Buffer，不经过网络协议栈，理论上开销更小，不过缺少实际的数据指标，下面以 redis 为例子，测试下在同样环境下 Unix Domain Socket 和 TCP/IP Loopback 的表现。</p>
+<h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p>Redis Version: 4.0.9
+Linux Kernel: 4.15.0-112-generic
+CPU: 1 x Intel(R) Core(TM) i7-8557U CPU @ 1.70GHz</p>
+<h3 id="测试结果"><a href="#测试结果" class="headerlink" title="测试结果"></a>测试结果</h3><p><strong>TCP/IP Loopback</strong>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> redis-benchmark -t ping,get,<span class="built_in">set</span> -q -d 256 -n 100000</span></span><br><span class="line">PING_INLINE: 60060.06 requests per second</span><br><span class="line">PING_BULK: 56211.35 requests per second</span><br><span class="line">SET: 54884.74 requests per second</span><br><span class="line">GET: 54141.85 requests per second</span><br></pre></td></tr></table></figure></p>
+<p><strong>Unix Domain Socket</strong>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> redis-benchmark -t ping,get,<span class="built_in">set</span> -q -s /var/run/redis/redis-server.sock -d 256 -n 100000</span></span><br><span class="line">PING_INLINE: 82169.27 requests per second</span><br><span class="line">PING_BULK: 82712.98 requests per second</span><br><span class="line">SET: 85984.52 requests per second</span><br><span class="line">GET: 82101.80 requests per second</span><br></pre></td></tr></table></figure></p>
+<p>从测试结果上看，Unix Domain Socket 的吞吐量是 TCP/IP Loopback 的 1.5 倍，提升了约 50%。</p>
+<h2 id="排障"><a href="#排障" class="headerlink" title="排障"></a>排障</h2><p>网络相关的程序在运行过程中，不可避免的会出现预期之外的情况，为了搞清楚原因大多时候我们会用 tcpdump 抓包并进行分析。然而 Unix Socket 底层实现不依赖任何 Network Protocol，其数据不经过任何网络协议栈，tcpdump 和 tshark 完全没法发挥其用处。</p>
+<p>并且，虽然 Unix Socket 被很多基础组件 MySQL、Redis、Docker 等支持，但社区却没有一个类似于 tcpdump 的标准抓包工具，对开发者不是很友好，出错排障成本也比较高。不过，没有标准的工具不代表不能分析流量，一定要做的话还是有一些折衷的办法的，下面以 docker 为例子介绍下社区常见的方案:</p>
+<blockquote>
+<p>docker 是 client-server 架构，两者通信默认采用 unix domain socket</p>
+</blockquote>
+<h3 id="Man-in-the-middle"><a href="#Man-in-the-middle" class="headerlink" title="Man in the middle"></a>Man in the middle</h3><p>核心思想是创建一个中间的 TCP Socket, 然后在 TCP Socket 上借助 tcpdump 抓包，具体玩法如下:</p>
+<p>在一个终端上执行下面的命令
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># 1. 获取 docker 监听的 socket 文件</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> lsof -p $(pgrep dockerd) | grep docker.sock</span></span><br><span class="line">dockerd 16087 root 6u unix 0xffff9cec3aee4000 0t0 45084 /var/run/docker.sock type=STREAM</span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># 2. 重命名原来的 socket 文件</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo mv /var/run/docker.sock&#123;,.orig&#125;</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># 3. 创建中间的 tcp socket 并拷贝流量</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo socat TCP-LISTEN:8080,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.orig &amp;</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># 4. 创建原来的 socket 文件并拷贝流量</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo socat UNIX-LISTEN:/var/run/docker.sock,fork TCP-CONNECT:127.0.0.1:8080 &amp;</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># 5. 使用 tcpdump 在中间的 tcp socket 上抓包</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo tcpdump -i lo tcp port 8080 -XX</span></span><br></pre></td></tr></table></figure></p>
+<p>另外开启一个终端执行 docker images 进行测试，下面是 tcpdump 抓包的部分结果，可以看到成功抓取到了通信过程中的 HTTP 请求。</p>
+<p><img src="https://i.imgur.com/QHhQzmI.png" alt=""></p>
+<p>该方案能够利用现成的 tcpdump 工具，比较友好，但缺点是需要重启 client 重建连接，对于没法重启的就玩不转了。</p>
+<h3 id="Strace"><a href="#Strace" class="headerlink" title="Strace"></a>Strace</h3><p>核心思想 trace 数据收发的 read 和 write 系统调用，获取 read/write 的参数, 具体玩法如下:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="comment"># 展示 docker images 涉及到的 write 调用</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> strace -e trace=write -e write=3 -v -s 1024 docker images 1&gt;/dev/null</span></span><br></pre></td></tr></table></figure>
+<p><img src="https://i.imgur.com/QukkDvw.png" alt=""></p>
+<p>该方案无需重建连接，能够在已有的连接上抓取流量，不过 strace 对程序的性能有比较大的影响，在生产环境使用的时候需要额外慎重。</p>
+<h3 id="eBPF"><a href="#eBPF" class="headerlink" title="eBPF"></a>eBPF</h3><blockquote>
+<p>eBPF 是 Linux 内核在 3.18 版本以后引入了的一种扩展的 BPF 虚拟机，允许用户动态的获取、修改内核中的关键数据和执行逻辑，并且有着非常优秀的性能。</p>
+</blockquote>
+<p>核心思想与 strace 类似，都是通过 trace 来分析读写流量，不过 eBPF 有着更小的开销，对应用程序性能影响较小。<a href="https://www.nccgroup.com/us/about-us/newsroom-and-events/blog/2019/march/ebpf-adventures-fiddling-with-the-linux-kernel-and-unix-domain-sockets/" target="_blank" rel="external nofollow noopener noreferrer">unixdump</a> 就是这样一个基于 eBPF 和 <a href="https://www.iovisor.org/technology/bcc" target="_blank" rel="external nofollow noopener noreferrer">bcc</a> 开发的工具，能够非常方便地 dump 系统所有的 unix domain sockets 流量，也支持过滤某一个 socket，下面是具体的玩法:</p>
+<p>首先开启一个终端启动 unixdump 程序</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo unixdump -s /var/run/docker.sock</span></span><br></pre></td></tr></table></figure>
+<p>另外开启一个终端执行 docker iamges 执行测试，下面是 dump 的结果:</p>
+<p><img src="https://i.imgur.com/THiUMKa.png" alt=""></p>
+<p>该方案无需重建连接，对应用程序性能影响较小，操作方便，有比较强的普适性；不过由于依赖了 eBPF，对内核版本有一定的要求。</p>
+<p>注: 上面省略了 <a href="https://www.iovisor.org/technology/bcc" target="_blank" rel="external nofollow noopener noreferrer">bcc</a> 和 <a href="https://www.nccgroup.com/us/about-us/newsroom-and-events/blog/2019/march/ebpf-adventures-fiddling-with-the-linux-kernel-and-unix-domain-sockets/" target="_blank" rel="external nofollow noopener noreferrer">unixdump</a> 的安装步骤，在实际测试的时候需要首先进行安装。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Unix Domain Socket 提供了一种单机不同进间程通信的方案，接口上与 Internet Socket 类似，功能上除了支持发送普通数据外，还能在进程间传递 FD、Credentials 和 SELinux Security Context信息，性能上相对于 TCP/IP 本地回环网络有 50% 左右的性能提升，排障上社区没有类似于 tcpdump 的成熟工具，流量分析和排障的成本会比较高。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://lists.freebsd.org/pipermail/freebsd-performance/2005-February/001143.html" target="_blank" rel="external nofollow noopener noreferrer">unix domain sockets vs. internet sockets</a></li>
+<li><a href="http://laforge.gnumonks.org/blog/20180330-udtrace/" target="_blank" rel="external nofollow noopener noreferrer">udtrace - Unix domain socket tracing</a></li>
+<li><a href="https://archive.fosdem.org/2020/schedule/event/debugging_strace_perfotmance/attachments/slides/4046/export/events/attachments/debugging_strace_perfotmance/slides/4046/fosdem_2020_slides_strace_fight_for_performance.pdf" target="_blank" rel="external nofollow noopener noreferrer">strace fight for performance</a></li>
+<li><a href="https://www.nccgroup.com/us/about-us/newsroom-and-events/blog/2019/march/ebpf-adventures-fiddling-with-the-linux-kernel-and-unix-domain-sockets/" target="_blank" rel="external nofollow noopener noreferrer">ebpf adventures fiddling with the linux kernel and unix domain sockets</a></li>
+</ul>
+
+        </div>
+      </article>
+    </div>
+    <!-- Comments -->
+    <div class="container">
+      
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+
+  
+  <div id="disqus_thread">
+    <script type="text/javascript">
+    var disqus_config = function () {
+          this.page.url = window.location.href;
+          this.page.identifier = 'post-unix-domain-socket';
+          this.page.title = 'Unix Domain Socket';
+      };
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+
+    </div>
+    <!-- Pre or Next -->
+    <div class="nav-links">
+      
+        <div class="nav-previous">
+          <a href="/posts/70bdc8a2/" rel="prev"><span class="meta-arraw meta-arraw-left"></span> Older Posts</a>
+        </div>
+      
+      
+        <div class="nav-next">
+          <a href="/posts/18ea64ae/" rel="prev">Newer Posts <span class="meta-arraw meta-arraw-right"></span></a>
+        </div>
+      
+    </div>
+
+  </div>
+</div>
+
+
+  <!-- Footer -->
+  <!-- Footer-widgets -->
+<div class="footer-widgets">
+  <div class="row inside-wrapper">
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">关于本站</h1>
+        <div class="custom-widget-content">
+          
+          Keep learning forever
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Contact</h1>
+        <div class="widget-text">
+          
+            
+              <a href="https://github.com/kirk91" class="icon icon-github" target="_blank" rel="external nofollow noopener noreferrer">github</a>
+            
+              <a href="mailto:kirk91.han@gmail.com" class="icon icon-mail" target="_blank" rel="external nofollow noopener noreferrer">mail</a>
+            
+          
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Search</h1>
+        <div class="widget-text">
+          <form onsubmit="return appDaily.submitSearch('')">
+            <p>
+              <input type="text" placeholder="search..." id="homeSearchInput">
+            </p>
+            <!-- <input type="submit" value="GO"> -->
+          </form>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<!-- Footer -->
+<footer class="site-info">
+  <p>
+    <span>coding & life &copy; 2022</span>
+    
+      <span class="split">|</span>
+      <span>Powered by <a href="https://hexo.io/" target="_blank" rel="external nofollow noopener noreferrer">Hexo</a> with Theme <a href="https://github.com/GallenHu/hexo-theme-Daily" target="_blank" rel="external nofollow noopener noreferrer">Daily</a></span>
+    
+  </p>
+</footer>
+
+
+  <!-- After footer scripts -->
+  <!-- scripts -->
+
+<script src="/js/app.js"></script>
+
+
+<script>
+  var disqus_shortname = 'kirk91';
+
+  
+  var disqus_url = 'https://kirk91.github.io/posts/e850c11/';
+  
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+
+<!-- google_analytics start -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89547051-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- google_analytics end -->
+
+
+
+</body>
+
+</html>

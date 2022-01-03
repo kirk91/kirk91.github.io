@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!--Description-->
+  
+  <meta name="description" content="Keep learning forever">
+  
+
+  <!--Author-->
+  
+  <meta name="author" content="kirk">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="在centos7上编译安装nghttp2">
+  
+  <!--Open Graph Description-->
+  
+      <meta property="og:description" content="Keep learning forever">
+  
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="coding &amp; life">
+  <!--Type page-->
+  
+      <meta property="og:type" content="article">
+  
+  <!--Page Cover-->
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Title -->
+  
+  <title>在centos7上编译安装nghttp2 - coding &amp; life</title>
+
+
+  <link rel="shortcut icon" href="https://hexo.io/icon/favicon-96x96.png">
+
+  <!-- Custom CSS/Sass -->
+  
+<link rel="stylesheet" href="/css/style.css">
+
+
+  <!----------------------------
+  https://github.com/GallenHu/hexo-theme-Daily
+
+ _____            _   _
+|  __ \          (_) | |
+| |  | |   __ _   _  | |  _   _
+| |  | |  / _` | | | | | | | | |
+| |__| | | (_| | | | | | | |_| |
+|_____/   \__,_| |_| |_|  \__, |
+                          __/ |
+                         |___/
+
+    --------------------------->
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+<body>
+
+  <!-- Nav -->
+  <header class="site-header">
+  <div class="header-inside">
+    <div class="logo">
+      <a href="/" rel="home">
+        
+        <img src="https://hexo.io/logo.svg" alt="coding & life" height="60">
+        
+      </a>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse">
+        <ul class="navbar-nav">
+          
+          
+            <li>
+              <a href="/.">
+                
+                  home
+                
+              </a>
+            </li>
+          
+            <li>
+              <a href="/archives">
+                
+                  archive
+                
+              </a>
+            </li>
+          
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
+    </nav>
+    <div class="button-wrap">
+      <button class="menu-toggle">Primary Menu</button>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Main Content -->
+  <div class="content-area">
+  <div class="post">
+    <!-- Post Content -->
+    <div class="container">
+      <article>
+        <!-- Title date & tags -->
+        <div class="post-header">
+          <h1 class="entry-title">
+            在centos7上编译安装nghttp2
+            
+          </h1>
+          <p class="posted-on">
+          2017-02-22
+          </p>
+          <div class="tags-links">
+            
+              
+                <a href="/tags/nghttp2/" rel="tag">
+                  nghttp2
+                </a>
+              
+                <a href="/tags/centos/" rel="tag">
+                  centos
+                </a>
+              
+                <a href="/tags/ops/" rel="tag">
+                  ops
+                </a>
+              
+            
+          </div>
+        </div>
+        <!-- Post Main Content -->
+        <div class="entry-content ">
+          <blockquote>
+<p>最近有一个项目使用grpc对外提供服务, 在上线部署过程中遇到些问题，主要是http2流量的负载均衡和加解密。
+本想着借助nginx来解决反向代理和加解密的问题，但无奈nginx暂还不支持http2的反向代理而且在相当长的一段时间
+内没有计划, 具体信息参见<a href="https://trac.nginx.org/nginx/ticket/923" target="_blank" rel="external nofollow noopener noreferrer">这里</a>, 于是只能使用其他的解决方案如
+<a href="https://nghttp2.org/" target="_blank" rel="external nofollow noopener noreferrer">nghttp2</a>或<a href="https://github.com/lyft/envoy" target="_blank" rel="external nofollow noopener noreferrer">envoy</a></p>
+</blockquote>
+<p><a href="https://nghttp2.org/" target="_blank" rel="external nofollow noopener noreferrer">nghttp2</a>是一个由日本工程师开发的项目，提供<code>C Library</code>和一些实用的<code>tools</code>
+(nghttpd nghttp nghttpx等). 作者没有提供通用的发行包rpm或deb, 需要使用的话只能从源码开始编译;
+文档上详细描述了在<code>ubuntu</code>上的编译<a href="https://github.com/nghttp2/nghttp2#requirements" target="_blank" rel="external nofollow noopener noreferrer">安装流程</a>，
+但却缺少其他常用发行版<code>centos</code>的编译安装流程 (倒吸凉气一口, 公司生产服务器使用的是清一色的centos, 还是只能硬着头皮搞下去).</p>
+<p>如果你使用的服务器发行版本是<code>ubuntu</code>, 请移步<a href="https://github.com/nghttp2/nghttp2#requirements" target="_blank" rel="external nofollow noopener noreferrer">这里</a>;
+下面将详细描述在<code>centos</code>上编译nghttp2的流程:</p>
+<h2 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h2><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">$ sudo yum -y groupinstall <span class="string">"Development Tools"</span></span><br><span class="line">$ sudo yum -y install openssl-devel libxml2-devel libev-devel jemalloc-devel python-devel</span><br><span class="line"></span><br><span class="line">$ <span class="comment"># build libcares from source code</span></span><br><span class="line">$ <span class="comment"># download the latest version</span></span><br><span class="line">$ wget https://c-ares.haxx.se/download/c-ares-1.12.0.tar.gz -O /tmp/c-ares.tar.gz</span><br><span class="line">$ mkdir -p /tmp/c-ares</span><br><span class="line">$ tar -zxvf /tmp/c-ares.tar.gz -C /tmp/c-ares --strip-components=1</span><br><span class="line">$ <span class="built_in">cd</span> /tmp/c-ares &amp;&amp; ./configure --libdir=/usr/lib64</span><br><span class="line">$ make</span><br><span class="line">$ sudo make install</span><br><span class="line"></span><br><span class="line">$ <span class="comment"># build jansson from source code</span></span><br><span class="line">$ wget http://www.digip.org/jansson/releases/jansson-2.9.tar.gz -O /tmp/jansson.tar.gz</span><br><span class="line">$ mkdir -p /tmp/jansson</span><br><span class="line">$ tar -zxvf /tmp/jansson.tar.gz -C /tmp/jansson --strip-components=1</span><br><span class="line">$ <span class="built_in">cd</span> /tmp/jansson &amp;&amp; ./configure --libdir=/usr/lib64</span><br><span class="line">$ make</span><br><span class="line">$ make check</span><br><span class="line">$ sudo make install</span><br></pre></td></tr></table></figure>
+<h2 id="编译安装nghttp2"><a href="#编译安装nghttp2" class="headerlink" title="编译安装nghttp2"></a>编译安装nghttp2</h2><ul>
+<li>下载最新版本源码</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">$ wget https://github.com/nghttp2/nghttp2/releases/download/v1.19.0/nghttp2-1.19.0.tar.gz -O /tmp/nghttp2.tar.gz</span><br><span class="line">$ mkdir -p /tmp/nghttp2</span><br><span class="line">$ tar -zxvf /tmp/nghttp2.tar.gz -C /tmp/nghttp2 --strip-components=1</span><br></pre></td></tr></table></figure>
+<ul>
+<li>生成Makefile</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /tmp/nghttp2 &amp;&amp; ./configure --<span class="built_in">enable</span>-app</span><br></pre></td></tr></table></figure>
+<p>注: 如果输出中包含<code>package xxx not found</code>, 请自行goolge安装相应的依赖或给我留言</p>
+<ul>
+<li>编译</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">$ make</span><br></pre></td></tr></table></figure>
+<ul>
+<li>安装</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">$ sudo make install</span><br><span class="line">$ <span class="comment"># show nghttpx version</span></span><br><span class="line">$ nghttpx -v</span><br></pre></td></tr></table></figure>
+<p>关于<code>nghttpx</code>的使用和参数配置可以参照<a href="https://nghttp2.org/documentation/nghttpx-howto.html" target="_blank" rel="external nofollow noopener noreferrer">官方文档</a></p>
+
+        </div>
+      </article>
+    </div>
+    <!-- Comments -->
+    <div class="container">
+      
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+
+  
+  <div id="disqus_thread">
+    <script type="text/javascript">
+    var disqus_config = function () {
+          this.page.url = window.location.href;
+          this.page.identifier = 'post-build-nghttp2-on-centos';
+          this.page.title = '在centos7上编译安装nghttp2';
+      };
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+
+    </div>
+    <!-- Pre or Next -->
+    <div class="nav-links">
+      
+        <div class="nav-previous">
+          <a href="/posts/2d571d09/" rel="prev"><span class="meta-arraw meta-arraw-left"></span> Older Posts</a>
+        </div>
+      
+      
+        <div class="nav-next">
+          <a href="/posts/d67af418/" rel="prev">Newer Posts <span class="meta-arraw meta-arraw-right"></span></a>
+        </div>
+      
+    </div>
+
+  </div>
+</div>
+
+
+  <!-- Footer -->
+  <!-- Footer-widgets -->
+<div class="footer-widgets">
+  <div class="row inside-wrapper">
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">关于本站</h1>
+        <div class="custom-widget-content">
+          
+          Keep learning forever
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Contact</h1>
+        <div class="widget-text">
+          
+            
+              <a href="https://github.com/kirk91" class="icon icon-github" target="_blank" rel="external nofollow noopener noreferrer">github</a>
+            
+              <a href="mailto:kirk91.han@gmail.com" class="icon icon-mail" target="_blank" rel="external nofollow noopener noreferrer">mail</a>
+            
+          
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Search</h1>
+        <div class="widget-text">
+          <form onsubmit="return appDaily.submitSearch('')">
+            <p>
+              <input type="text" placeholder="search..." id="homeSearchInput">
+            </p>
+            <!-- <input type="submit" value="GO"> -->
+          </form>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<!-- Footer -->
+<footer class="site-info">
+  <p>
+    <span>coding & life &copy; 2022</span>
+    
+      <span class="split">|</span>
+      <span>Powered by <a href="https://hexo.io/" target="_blank" rel="external nofollow noopener noreferrer">Hexo</a> with Theme <a href="https://github.com/GallenHu/hexo-theme-Daily" target="_blank" rel="external nofollow noopener noreferrer">Daily</a></span>
+    
+  </p>
+</footer>
+
+
+  <!-- After footer scripts -->
+  <!-- scripts -->
+
+<script src="/js/app.js"></script>
+
+
+<script>
+  var disqus_shortname = 'kirk91';
+
+  
+  var disqus_url = 'https://kirk91.github.io/posts/28c07e17/';
+  
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+
+<!-- google_analytics start -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89547051-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- google_analytics end -->
+
+
+
+</body>
+
+</html>

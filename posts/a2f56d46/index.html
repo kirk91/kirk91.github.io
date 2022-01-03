@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!--Description-->
+  
+  <meta name="description" content="Keep learning forever">
+  
+
+  <!--Author-->
+  
+  <meta name="author" content="kirk">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="科学上网之auto-ss">
+  
+  <!--Open Graph Description-->
+  
+      <meta property="og:description" content="Keep learning forever">
+  
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="coding &amp; life">
+  <!--Type page-->
+  
+      <meta property="og:type" content="article">
+  
+  <!--Page Cover-->
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Title -->
+  
+  <title>科学上网之auto-ss - coding &amp; life</title>
+
+
+  <link rel="shortcut icon" href="https://hexo.io/icon/favicon-96x96.png">
+
+  <!-- Custom CSS/Sass -->
+  
+<link rel="stylesheet" href="/css/style.css">
+
+
+  <!----------------------------
+  https://github.com/GallenHu/hexo-theme-Daily
+
+ _____            _   _
+|  __ \          (_) | |
+| |  | |   __ _   _  | |  _   _
+| |  | |  / _` | | | | | | | | |
+| |__| | | (_| | | | | | | |_| |
+|_____/   \__,_| |_| |_|  \__, |
+                          __/ |
+                         |___/
+
+    --------------------------->
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+<body>
+
+  <!-- Nav -->
+  <header class="site-header">
+  <div class="header-inside">
+    <div class="logo">
+      <a href="/" rel="home">
+        
+        <img src="https://hexo.io/logo.svg" alt="coding & life" height="60">
+        
+      </a>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse">
+        <ul class="navbar-nav">
+          
+          
+            <li>
+              <a href="/.">
+                
+                  home
+                
+              </a>
+            </li>
+          
+            <li>
+              <a href="/archives">
+                
+                  archive
+                
+              </a>
+            </li>
+          
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
+    </nav>
+    <div class="button-wrap">
+      <button class="menu-toggle">Primary Menu</button>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Main Content -->
+  <div class="content-area">
+  <div class="post">
+    <!-- Post Content -->
+    <div class="container">
+      <article>
+        <!-- Title date & tags -->
+        <div class="post-header">
+          <h1 class="entry-title">
+            科学上网之auto-ss
+            
+          </h1>
+          <p class="posted-on">
+          2015-09-04
+          </p>
+          <div class="tags-links">
+            
+              
+                <a href="/tags/shadowsocks/" rel="tag">
+                  shadowsocks
+                </a>
+              
+                <a href="/tags/auto-ss/" rel="tag">
+                  auto-ss
+                </a>
+              
+                <a href="/tags/科学上网/" rel="tag">
+                  科学上网
+                </a>
+              
+            
+          </div>
+        </div>
+        <!-- Post Main Content -->
+        <div class="entry-content ">
+          <p>很开心今年7月份顺利毕业，并成功进入互联网公司成为了一名PYTHON工程师，从此便踏上了一条“不归路” O(∩_∩)O~~；这条路崎岖不平，不但要写得了<code>code</code>，还要修得了<code>bug</code>，更重要地是要学会科学上网来武装自己，接下来我们就八一八那些年我们追过的科学上网。</p>
+<p><code>VPN</code>、<code>GoAgent</code>、<code>自由门</code>、<code>红杏</code>等科学上网工具，伴随着GFW的升级更新很多都已经失效。正所谓长江后浪推前浪，一浪更比一浪高，基于socks协议的<a href="https://github.com/shadowsocks/shadowsocks" target="_blank" rel="external nofollow noopener noreferrer">shadowsocks</a>由于其简单方便轻量稳定易于部署的特性，渐渐地被广大服务商和开发者所采用。</p>
+<p>ShadowSocks的部署特别简单，但前提是需要在境外或者香港拥有一台vps，如果你拥有自己的vps那还犹豫什么赶紧动手试一下吧（ps：Amazon EC2使用信用卡可以免费使用一年云主机，just do it）。鉴于很多人没有自己的vps，一些SS服务商也很贴心，每天会为注册会员提供免费的账号，但免费的账号会定时更新而且需要用户手动选择最快的链路，如果你曾经使用过这样的免费账号，一定会感到很蛋疼~~~~(&gt;_&lt;)~~~~ 吐槽归吐槽，但他们确实也为我们提供了很多真实可用的服务，<a href="https://www.ss-link.com" target="_blank" rel="external nofollow noopener noreferrer">ss-link</a>就是一个这样的服务商，拥有多条国际线路，线路稳定速度平均在200ms左右，之前一直有使用它提供的免费账号，但需要常去网站查看最新的免费账号；作为一个developer怎能经常去刷网页呢，肯定是要使用更geek的方式去获取账号呀。</p>
+<p><a href="https://github.com/alphapigger/ss-link-auto" target="_blank" rel="external nofollow noopener noreferrer"><code>auto-ss</code></a>就这样诞生了，它是一个基于python 2.7编写的命令行工具，默认情况下会帮助用户获取最新的SS账号，基本操作如下所示:</p>
+<p><img src="/images/auto-ss_demo.png" alt=""></p>
+<ul>
+<li>mode为<code>speed</code>时，<code>auto-ss</code>会自动获取免费账号，并测试这些账号的连接速度</li>
+<li>mode为<code>run</code>时，<code>auto-ss</code>会选择速度最快的线路启动sslocal服务</li>
+</ul>
+<p>如果想安装或者获取<code>auto-ss helper</code>更多用法，请点击<a href="https://github.com/alphapigger/ss-link-auto" target="_blank" rel="external nofollow noopener noreferrer">HERE</a></p>
+<hr>
+<p>感谢<a href="https://github.com" target="_blank" rel="external nofollow noopener noreferrer">github</a>和<a href="https://hexo.io/" target="_blank" rel="external nofollow noopener noreferrer">hexo</a>的易用性，让我有了自己的博客，真的很开心☺️；这是毕业后写的第一篇博文，不到位的地方还请大家多多提建议，真心希望通过博客能够和大家分享自己毕业后的生活和工作，能够和大家一起进步！！！</p>
+
+        </div>
+      </article>
+    </div>
+    <!-- Comments -->
+    <div class="container">
+      
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+
+  
+  <div id="disqus_thread">
+    <script type="text/javascript">
+    var disqus_config = function () {
+          this.page.url = window.location.href;
+          this.page.identifier = 'post-shadowsocks-auto';
+          this.page.title = '科学上网之auto-ss';
+      };
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+
+    </div>
+    <!-- Pre or Next -->
+    <div class="nav-links">
+      
+        <div class="nav-previous">
+          <a href="/posts/a83018fb/" rel="prev"><span class="meta-arraw meta-arraw-left"></span> Older Posts</a>
+        </div>
+      
+      
+    </div>
+
+  </div>
+</div>
+
+
+  <!-- Footer -->
+  <!-- Footer-widgets -->
+<div class="footer-widgets">
+  <div class="row inside-wrapper">
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">关于本站</h1>
+        <div class="custom-widget-content">
+          
+          Keep learning forever
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Contact</h1>
+        <div class="widget-text">
+          
+            
+              <a href="https://github.com/kirk91" class="icon icon-github" target="_blank" rel="external nofollow noopener noreferrer">github</a>
+            
+              <a href="mailto:kirk91.han@gmail.com" class="icon icon-mail" target="_blank" rel="external nofollow noopener noreferrer">mail</a>
+            
+          
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Search</h1>
+        <div class="widget-text">
+          <form onsubmit="return appDaily.submitSearch('')">
+            <p>
+              <input type="text" placeholder="search..." id="homeSearchInput">
+            </p>
+            <!-- <input type="submit" value="GO"> -->
+          </form>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<!-- Footer -->
+<footer class="site-info">
+  <p>
+    <span>coding & life &copy; 2022</span>
+    
+      <span class="split">|</span>
+      <span>Powered by <a href="https://hexo.io/" target="_blank" rel="external nofollow noopener noreferrer">Hexo</a> with Theme <a href="https://github.com/GallenHu/hexo-theme-Daily" target="_blank" rel="external nofollow noopener noreferrer">Daily</a></span>
+    
+  </p>
+</footer>
+
+
+  <!-- After footer scripts -->
+  <!-- scripts -->
+
+<script src="/js/app.js"></script>
+
+
+<script>
+  var disqus_shortname = 'kirk91';
+
+  
+  var disqus_url = 'https://kirk91.github.io/posts/a2f56d46/';
+  
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+
+<!-- google_analytics start -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89547051-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- google_analytics end -->
+
+
+
+</body>
+
+</html>

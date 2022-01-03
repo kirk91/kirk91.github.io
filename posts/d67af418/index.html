@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!--Description-->
+  
+  <meta name="description" content="Keep learning forever">
+  
+
+  <!--Author-->
+  
+  <meta name="author" content="kirk">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="median of two sorted arrays">
+  
+  <!--Open Graph Description-->
+  
+      <meta property="og:description" content="Keep learning forever">
+  
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="coding &amp; life">
+  <!--Type page-->
+  
+      <meta property="og:type" content="article">
+  
+  <!--Page Cover-->
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Title -->
+  
+  <title>median of two sorted arrays - coding &amp; life</title>
+
+
+  <link rel="shortcut icon" href="https://hexo.io/icon/favicon-96x96.png">
+
+  <!-- Custom CSS/Sass -->
+  
+<link rel="stylesheet" href="/css/style.css">
+
+
+  <!----------------------------
+  https://github.com/GallenHu/hexo-theme-Daily
+
+ _____            _   _
+|  __ \          (_) | |
+| |  | |   __ _   _  | |  _   _
+| |  | |  / _` | | | | | | | | |
+| |__| | | (_| | | | | | | |_| |
+|_____/   \__,_| |_| |_|  \__, |
+                          __/ |
+                         |___/
+
+    --------------------------->
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+<body>
+
+  <!-- Nav -->
+  <header class="site-header">
+  <div class="header-inside">
+    <div class="logo">
+      <a href="/" rel="home">
+        
+        <img src="https://hexo.io/logo.svg" alt="coding & life" height="60">
+        
+      </a>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse">
+        <ul class="navbar-nav">
+          
+          
+            <li>
+              <a href="/.">
+                
+                  home
+                
+              </a>
+            </li>
+          
+            <li>
+              <a href="/archives">
+                
+                  archive
+                
+              </a>
+            </li>
+          
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
+    </nav>
+    <div class="button-wrap">
+      <button class="menu-toggle">Primary Menu</button>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Main Content -->
+  <div class="content-area">
+  <div class="post">
+    <!-- Post Content -->
+    <div class="container">
+      <article>
+        <!-- Title date & tags -->
+        <div class="post-header">
+          <h1 class="entry-title">
+            median of two sorted arrays
+            
+          </h1>
+          <p class="posted-on">
+          2016-12-30
+          </p>
+          <div class="tags-links">
+            
+              
+                <a href="/tags/leetcode/" rel="tag">
+                  leetcode
+                </a>
+              
+                <a href="/tags/algorithm/" rel="tag">
+                  algorithm
+                </a>
+              
+            
+          </div>
+        </div>
+        <!-- Post Main Content -->
+        <div class="entry-content ">
+          <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a><a href="https://leetcode.com/problems/median-of-two-sorted-arrays/" target="_blank" rel="external nofollow noopener noreferrer">问题</a></h2><p>There are two sorted arrays nums1 and nums2 of size m and n respectively.</p>
+<p>Find the median of the two sorted arrays. The overall run time complexity should be O(log (m+n)).</p>
+<blockquote>
+<p>求两个有序数组的中位数, 时间复杂度需要满足O(log(m+n))</p>
+</blockquote>
+<p>Example 1:
+nums1 = [1, 3]
+nums2 = [2]</p>
+<p>The median is 2.0
+Example 2:
+nums1 = [1, 2]
+nums2 = [3, 4]</p>
+<p>The median is (2 + 3)/2 = 2.5</p>
+<h2 id="想法"><a href="#想法" class="headerlink" title="想法"></a>想法</h2><p>将两个数组合并成一个临时数组，然后在新数组中求其中位数, 如果新数组长度为基数, 中位数为<code>arr[(n+1)/2]</code>,
+否则为<code>(arr[(n-1)/2] + arr[n/2])/2</code>。 该算法的时间复杂度为O(max(m,n)),
+空间复杂度为O(m+n), 时间复杂度不能满足题目要求，需要另寻他法。</p>
+<p>思前想后没有想到好的算法，最后查看了leetcode中的top solution, 算法部分分析和处理
+的很是精妙, 时间复杂度为O(log(min(m,n)))。 下面是原文的翻译，
+如有需要可以点击<a href="https://discuss.leetcode.com/topic/4996/share-my-o-log-min-m-n-solution-with-explanation" target="_blank" rel="external nofollow noopener noreferrer"><em>这里</em></a></p>
+<blockquote>
+<p>为了解决这个问题，我们需要理解什么是中位数。在统计学上，中位数用于将一个集合拆分成
+两个同等大小的子集合，其中一个子集的任何一个元素都大于另外一个子集。如果我们明白了
+中位数是用于划分相同子集的，就能够很容易地想出解决方案。</p>
+</blockquote>
+<blockquote>
+<p>首先我们选取任意的位置<em>i</em>把数组<em>A</em>划分成两个部分
+<figure class="highlight dns"><table><tr><td class="code"><pre><span class="line">      left_A             |        right_A</span><br><span class="line"><span class="keyword">A</span>[<span class="number">0</span>], <span class="keyword">A</span>[<span class="number">1</span>], ..., <span class="keyword">A</span>[i-<span class="number">1</span>]  |  <span class="keyword">A</span>[i], <span class="keyword">A</span>[i+<span class="number">1</span>], ..., <span class="keyword">A</span>[m-<span class="number">1</span>]</span><br></pre></td></tr></table></figure>
+假设<strong>A</strong>有<strong>m</strong>个元素，则存在<strong>m+1</strong>中切分的方法(i取0~m之间的任意值), 并且需要满足: len(left_A) = i,
+len(right_A) = m -i(当i=0的时候，left_A即为空; i=m的时候, right_A即为空)
+按照同样的方法，我们可以选取任意的位置j把B分为两个部分:
+<figure class="highlight inform7"><table><tr><td class="code"><pre><span class="line">      left_B             |        right_B</span><br><span class="line">B<span class="comment">[0]</span>, B<span class="comment">[1]</span>, ..., B<span class="comment">[j-1]</span>  |  B<span class="comment">[j]</span>, B<span class="comment">[j+1]</span>, ..., B<span class="comment">[n-1]</span></span><br></pre></td></tr></table></figure>
+把left_A和left_B放在一起组成一个集合left_part，把right_A和right_B也放在一起组成另外一个集合right_part:
+<figure class="highlight inform7"><table><tr><td class="code"><pre><span class="line">      left_part          |        right_part</span><br><span class="line">A<span class="comment">[0]</span>, A<span class="comment">[1]</span>, ..., A<span class="comment">[i-1]</span>  |  A<span class="comment">[i]</span>, A<span class="comment">[i+1]</span>, ..., A<span class="comment">[m-1]</span></span><br><span class="line">B<span class="comment">[0]</span>, B<span class="comment">[1]</span>, ..., B<span class="comment">[j-1]</span>  |  B<span class="comment">[j]</span>, B<span class="comment">[j+1]</span>, ..., B<span class="comment">[n-1]</span></span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<blockquote>
+<p>如果我们可以保证:
+<figure class="highlight isbl"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>) <span class="function"><span class="title">len</span>(<span class="variable">left_part</span>) == <span class="title">len</span>(<span class="variable">right_part</span>)</span></span><br><span class="line"><span class="number">2</span>) <span class="function"><span class="title"><span class="built_in">max</span></span>(<span class="variable">left_part</span>) &lt;= <span class="title"><span class="built_in">min</span></span>(<span class="variable">right_part</span>)</span></span><br></pre></td></tr></table></figure>
+那么我们就可以把{A,B}里面的所有元素分成两个有着相同长度的部分,  并且其中一个部分永远大于另外一部分。
+那么中位数就等于<code>(max(left_part) + min(right_part))/2</code>
+为了确保这两个条件，我们只需要保证:
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">(<span class="number">1</span>) <span class="built_in">i</span> + <span class="built_in">j</span> = m - <span class="built_in">i</span> + n - <span class="built_in">j</span> (偶数)  or  <span class="built_in">i</span> + <span class="built_in">j</span> = m - <span class="built_in">i</span> + n - <span class="built_in">j</span> + <span class="number">1</span> (基数)</span><br><span class="line">    <span class="keyword">if</span> n &gt;= m 只需要保证: <span class="built_in">i</span>在<span class="number">0</span>~m之间, <span class="built_in">j</span> = (m+n+<span class="number">1</span>)/<span class="number">2</span> -<span class="built_in">i</span> (偶数加<span class="number">1</span>除<span class="number">2</span>保持值不变)</span><br><span class="line">(<span class="number">2</span>) B[<span class="built_in">j</span><span class="number">-1</span>] &lt;= A[<span class="built_in">i</span>] and A[<span class="built_in">i</span><span class="number">-1</span>] &lt;= B[<span class="built_in">j</span>]</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<blockquote>
+<p>注释1: 为了简化处理，这里假设A[i-1], B[j-1], A[i], B[j]都是有效的，后面我们会详细谈到边界的处理</p>
+</blockquote>
+<blockquote>
+<p>注释2: 为什么n&gt;=m? 因为需要确保当0 &lt;= i &lt;= m 并且 j = (m+n+1)/2 -i 时，j是非负数。 如果 n &lt; m,
+j可能会出现负数的情况，会造成数组越界的情况。</p>
+</blockquote>
+<blockquote>
+<p>因此，我们需要做的是:
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">在[<span class="number">0</span>, m]寻找<span class="built_in">i</span>, 使其能够满足:</span><br><span class="line">    B[<span class="built_in">j</span><span class="number">-1</span>] &lt;= A[<span class="built_in">i</span>] and A[<span class="built_in">i</span><span class="number">-1</span>] &lt;= B[<span class="built_in">j</span>], ( where <span class="built_in">j</span> = (m + n + <span class="number">1</span>)/<span class="number">2</span> - <span class="built_in">i</span> )</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<blockquote>
+<p>我们可以使用二分法来处理，具体流程如下:
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">&lt;<span class="number">1</span>&gt; 设置 imin = <span class="number">0</span>, imax = m, 然后开始在[imin, imax]中寻找<span class="built_in">i</span></span><br><span class="line"></span><br><span class="line">&lt;<span class="number">2</span>&gt; 设置 <span class="built_in">i</span> = (imin + imax)/<span class="number">2</span>, <span class="built_in">j</span> = (m+n+<span class="number">1</span>)/<span class="number">2</span> -<span class="built_in">i</span></span><br><span class="line"></span><br><span class="line">&lt;<span class="number">3</span>&gt; 让左边部分的长度等于右边，会遇到下面三种情况:</span><br><span class="line">    &lt;a&gt; B[<span class="built_in">j</span><span class="number">-1</span>] &lt;= A[<span class="built_in">i</span>] and A[<span class="built_in">i</span><span class="number">-1</span>] &lt;= B[<span class="built_in">j</span>]</span><br><span class="line">        意味着我们找到到目标<span class="built_in">i</span>, 可以停止寻找</span><br><span class="line">    &lt;b&gt; B[<span class="built_in">j</span><span class="number">-1</span>] &gt; A[<span class="built_in">i</span>]</span><br><span class="line">        意味着 A[<span class="built_in">i</span>]的太小了，我们需要调整<span class="built_in">i</span>的值使其满足B[<span class="built_in">j</span><span class="number">-1</span>] &lt;= A[<span class="built_in">i</span>]</span><br><span class="line">        A是升序数组，如果要增大A[<span class="built_in">i</span>], 需要增大<span class="built_in">i</span>值。即我们需要调整寻找区间为</span><br><span class="line">        [<span class="built_in">i</span>+<span class="number">1</span>, imax], 因此我们让imin等于<span class="built_in">i</span>+<span class="number">1</span>, 并跳转至&lt;<span class="number">2</span>&gt;继续执行</span><br><span class="line">    &lt;c&gt; A[<span class="built_in">i</span><span class="number">-1</span>] &gt; B[<span class="built_in">j</span>]</span><br><span class="line">        意味着A[<span class="built_in">i</span><span class="number">-1</span>]的值太大了，需要减少<span class="built_in">i</span>的值使其满足A[<span class="built_in">i</span><span class="number">-1</span>] &lt;= B[<span class="built_in">j</span>]。即我们需要</span><br><span class="line">        调整寻找区间为[imin, imax<span class="number">-1</span>], 因此我们让imax等于<span class="built_in">i</span><span class="number">-1</span>, 并跳转至&lt;<span class="number">2</span>&gt;继续执行</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<blockquote>
+<p>当对象i寻找到的时候，中位数即为:
+<figure class="highlight lisp"><table><tr><td class="code"><pre><span class="line">max(<span class="name">A</span>[i-1], B[j-1]) (<span class="name">when</span> m + n is odd)</span><br><span class="line">or (<span class="name">max</span>(<span class="name">A</span>[i-1], B[j-1]) + min(<span class="name">A</span>[i], B[j]))/2 (<span class="name">when</span> m + n is even)</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<blockquote>
+<p>现在让我们来考虑下边界值 i=0, i=m, j=0, j=n, 这些边界值会导致 A[i-1], B[j-1], A[i], B[j]
+一些值不存在。事实上边界值的情况会比我们想的更简单些, 如果A[i-1], B[j-1], A[i], B[j]中的
+一些不存在，我们就没必要去完全检查所需要的条件(B[j-1] &lt;= A[i] and A[i-1] &lt;= B[j])。例如,
+如果i=0, 则A[i-1]就不存在，我们就不需要检查A[i-1] &lt;= B[j]。因此，我们只需要做:
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">在[<span class="number">0</span>, m]寻找<span class="built_in">i</span>, 使其能够满足:</span><br><span class="line">    (<span class="built_in">j</span> == <span class="number">0</span> or <span class="built_in">i</span> == m or B[<span class="built_in">j</span><span class="number">-1</span>] &lt;= A[<span class="built_in">i</span>]) and</span><br><span class="line">    (<span class="built_in">i</span> == <span class="number">0</span> or <span class="built_in">j</span> == n or A[<span class="built_in">i</span><span class="number">-1</span>] &lt;= B[<span class="built_in">j</span>])</span><br><span class="line">    where <span class="built_in">j</span> = (m + n + <span class="number">1</span>)/<span class="number">2</span> - <span class="built_in">i</span>&gt;)&gt;)</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<blockquote>
+<p>在一个循环中，我们会遇到一下三种情况:
+<figure class="highlight matlab"><table><tr><td class="code"><pre><span class="line">&lt;a&gt; (<span class="built_in">j</span> == <span class="number">0</span> or <span class="built_in">i</span> == m or B[<span class="built_in">j</span><span class="number">-1</span>] &lt;= A[<span class="built_in">i</span>]) and</span><br><span class="line">    (<span class="built_in">i</span> == <span class="number">0</span> or <span class="built_in">j</span> = n or A[<span class="built_in">i</span><span class="number">-1</span>] &lt;= B[<span class="built_in">j</span>])</span><br><span class="line">    Means <span class="built_in">i</span> is perfect, we can stop searching.</span><br><span class="line"></span><br><span class="line">&lt;b&gt; <span class="built_in">j</span> &gt; <span class="number">0</span> and <span class="built_in">i</span> &lt; m and B[<span class="built_in">j</span> - <span class="number">1</span>] &gt; A[<span class="built_in">i</span>]</span><br><span class="line">    Means <span class="built_in">i</span> is too small, we must increase it.</span><br><span class="line"></span><br><span class="line">&lt;c&gt; <span class="built_in">i</span> &gt; <span class="number">0</span> and <span class="built_in">j</span> &lt; n and A[<span class="built_in">i</span> - <span class="number">1</span>] &gt; B[<span class="built_in">j</span>]</span><br><span class="line">    Means <span class="built_in">i</span> is too big, we must decrease it.</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<h2 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h2><h3 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h3><p>上面的想法中详细描述了算法的步骤，这里不再赘述</p>
+<h3 id="codes"><a href="#codes" class="headerlink" title="codes"></a>codes</h3><ul>
+<li><a href="https://github.com/kirk91/leetcode/blob/master/algorithms/median_of_two_sorted_arrays/main.go" target="_blank" rel="external nofollow noopener noreferrer">golang</a><figure class="highlight golang"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">findMedianSortedArrays</span><span class="params">(a, b []<span class="keyword">int</span>)</span> <span class="title">float64</span></span> &#123;</span><br><span class="line">	m, n := <span class="built_in">len</span>(a), <span class="built_in">len</span>(b)</span><br><span class="line">	<span class="keyword">if</span> m &gt; n &#123;</span><br><span class="line">		a, b, m, n = b, a, n, m</span><br><span class="line">	&#125;</span><br><span class="line">	l, r := <span class="number">0</span>, m</span><br><span class="line">	halfLen := (m + n + <span class="number">1</span>) / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> i, j <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> median <span class="keyword">float64</span></span><br><span class="line">	<span class="comment">// binary search</span></span><br><span class="line">	<span class="keyword">for</span> l &lt;= r &#123;</span><br><span class="line">		i = (l + r) / <span class="number">2</span></span><br><span class="line">		j = halfLen - i</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> i &lt; m &amp;&amp; b[j<span class="number">-1</span>] &gt; a[i] &#123;</span><br><span class="line">			l++</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> i &gt; <span class="number">0</span> &amp;&amp; a[i<span class="number">-1</span>] &gt; b[j] &#123;</span><br><span class="line">			r--</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">var</span> maxLeft <span class="keyword">int</span></span><br><span class="line">			<span class="keyword">if</span> i == <span class="number">0</span> &#123;</span><br><span class="line">				maxLeft = b[j<span class="number">-1</span>]</span><br><span class="line">			&#125; <span class="keyword">else</span> <span class="keyword">if</span> j == <span class="number">0</span> &#123;</span><br><span class="line">				maxLeft = a[i<span class="number">-1</span>]</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				maxLeft = max(a[i<span class="number">-1</span>], b[j<span class="number">-1</span>])</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> (m+n)%<span class="number">2</span> == <span class="number">1</span> &#123;</span><br><span class="line">				median = <span class="keyword">float64</span>(maxLeft)</span><br><span class="line">				<span class="keyword">break</span></span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">var</span> minRight <span class="keyword">int</span></span><br><span class="line">			<span class="keyword">if</span> i == m &#123;</span><br><span class="line">				minRight = b[j]</span><br><span class="line">			&#125; <span class="keyword">else</span> <span class="keyword">if</span> j == n &#123;</span><br><span class="line">				minRight = a[i]</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				minRight = min(a[i], b[j])</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			median = <span class="keyword">float64</span>(maxLeft+minRight) / <span class="number">2</span></span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> median</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">max</span><span class="params">(a, b <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> a &gt; b &#123;</span><br><span class="line">		<span class="keyword">return</span> a</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> b</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">min</span><span class="params">(a, b <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> a &gt; b &#123;</span><br><span class="line">		<span class="keyword">return</span> b</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> a</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+
+        </div>
+      </article>
+    </div>
+    <!-- Comments -->
+    <div class="container">
+      
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+
+  
+  <div id="disqus_thread">
+    <script type="text/javascript">
+    var disqus_config = function () {
+          this.page.url = window.location.href;
+          this.page.identifier = 'post-median-of-two-sorted-arrays';
+          this.page.title = 'median of two sorted arrays';
+      };
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+
+    </div>
+    <!-- Pre or Next -->
+    <div class="nav-links">
+      
+        <div class="nav-previous">
+          <a href="/posts/28c07e17/" rel="prev"><span class="meta-arraw meta-arraw-left"></span> Older Posts</a>
+        </div>
+      
+      
+        <div class="nav-next">
+          <a href="/posts/a83018fb/" rel="prev">Newer Posts <span class="meta-arraw meta-arraw-right"></span></a>
+        </div>
+      
+    </div>
+
+  </div>
+</div>
+
+
+  <!-- Footer -->
+  <!-- Footer-widgets -->
+<div class="footer-widgets">
+  <div class="row inside-wrapper">
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">关于本站</h1>
+        <div class="custom-widget-content">
+          
+          Keep learning forever
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Contact</h1>
+        <div class="widget-text">
+          
+            
+              <a href="https://github.com/kirk91" class="icon icon-github" target="_blank" rel="external nofollow noopener noreferrer">github</a>
+            
+              <a href="mailto:kirk91.han@gmail.com" class="icon icon-mail" target="_blank" rel="external nofollow noopener noreferrer">mail</a>
+            
+          
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Search</h1>
+        <div class="widget-text">
+          <form onsubmit="return appDaily.submitSearch('')">
+            <p>
+              <input type="text" placeholder="search..." id="homeSearchInput">
+            </p>
+            <!-- <input type="submit" value="GO"> -->
+          </form>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<!-- Footer -->
+<footer class="site-info">
+  <p>
+    <span>coding & life &copy; 2022</span>
+    
+      <span class="split">|</span>
+      <span>Powered by <a href="https://hexo.io/" target="_blank" rel="external nofollow noopener noreferrer">Hexo</a> with Theme <a href="https://github.com/GallenHu/hexo-theme-Daily" target="_blank" rel="external nofollow noopener noreferrer">Daily</a></span>
+    
+  </p>
+</footer>
+
+
+  <!-- After footer scripts -->
+  <!-- scripts -->
+
+<script src="/js/app.js"></script>
+
+
+<script>
+  var disqus_shortname = 'kirk91';
+
+  
+  var disqus_url = 'https://kirk91.github.io/posts/d67af418/';
+  
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+
+<!-- google_analytics start -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89547051-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- google_analytics end -->
+
+
+
+</body>
+
+</html>

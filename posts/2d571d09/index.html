@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!--Description-->
+  
+  <meta name="description" content="推送在外卖订餐中扮演着重要的角色，为商家实时接单、骑手实时派单提供基础的数据通道。早期推送是由第三方服务商提供的，
+随着业务复杂度的提升、订单量和用户数的持续增长，之前的系统已经远远不能满足需求，构建一个高性能、高可用的推送系统势在必行。
+今年上半年我们用go开发了一个hybrid push服务，用户在线则借助长连接下发消息，不在线则借助厂商或第三方通道下发消息。 在构建过程中遇到了些与
+goroutine stack 相关的问题，这里就和大家扯一扯。">
+  
+
+  <!--Author-->
+  
+  <meta name="author" content="kirk">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="聊一聊goroutine stack">
+  
+  <!--Open Graph Description-->
+  
+      <meta property="og:description" content="推送在外卖订餐中扮演着重要的角色，为商家实时接单、骑手实时派单提供基础的数据通道。早期推送是由第三方服务商提供的，
+随着业务复杂度的提升、订单量和用户数的持续增长，之前的系统已经远远不能满足需求，构建一个高性能、高可用的推送系统势在必行。
+今年上半年我们用go开发了一个hybrid push服务，用户在线则借助长连接下发消息，不在线则借助厂商或第三方通道下发消息。 在构建过程中遇到了些与
+goroutine stack 相关的问题，这里就和大家扯一扯。">
+  
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="coding &amp; life">
+  <!--Type page-->
+  
+      <meta property="og:type" content="article">
+  
+  <!--Page Cover-->
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Title -->
+  
+  <title>聊一聊goroutine stack - coding &amp; life</title>
+
+
+  <link rel="shortcut icon" href="https://hexo.io/icon/favicon-96x96.png">
+
+  <!-- Custom CSS/Sass -->
+  
+<link rel="stylesheet" href="/css/style.css">
+
+
+  <!----------------------------
+  https://github.com/GallenHu/hexo-theme-Daily
+
+ _____            _   _
+|  __ \          (_) | |
+| |  | |   __ _   _  | |  _   _
+| |  | |  / _` | | | | | | | | |
+| |__| | | (_| | | | | | | |_| |
+|_____/   \__,_| |_| |_|  \__, |
+                          __/ |
+                         |___/
+
+    --------------------------->
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+<body>
+
+  <!-- Nav -->
+  <header class="site-header">
+  <div class="header-inside">
+    <div class="logo">
+      <a href="/" rel="home">
+        
+        <img src="https://hexo.io/logo.svg" alt="coding & life" height="60">
+        
+      </a>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse">
+        <ul class="navbar-nav">
+          
+          
+            <li>
+              <a href="/.">
+                
+                  home
+                
+              </a>
+            </li>
+          
+            <li>
+              <a href="/archives">
+                
+                  archive
+                
+              </a>
+            </li>
+          
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
+    </nav>
+    <div class="button-wrap">
+      <button class="menu-toggle">Primary Menu</button>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Main Content -->
+  <div class="content-area">
+  <div class="post">
+    <!-- Post Content -->
+    <div class="container">
+      <article>
+        <!-- Title date & tags -->
+        <div class="post-header">
+          <h1 class="entry-title">
+            聊一聊goroutine stack
+            
+          </h1>
+          <p class="posted-on">
+          2017-07-29
+          </p>
+          <div class="tags-links">
+            
+              
+                <a href="/tags/go/" rel="tag">
+                  go
+                </a>
+              
+                <a href="/tags/goroutine/" rel="tag">
+                  goroutine
+                </a>
+              
+                <a href="/tags/stack/" rel="tag">
+                  stack
+                </a>
+              
+            
+          </div>
+        </div>
+        <!-- Post Main Content -->
+        <div class="entry-content ">
+          <p>推送在外卖订餐中扮演着重要的角色，为商家实时接单、骑手实时派单提供基础的数据通道。早期推送是由第三方服务商提供的，
+随着业务复杂度的提升、订单量和用户数的持续增长，之前的系统已经远远不能满足需求，构建一个高性能、高可用的推送系统势在必行。
+今年上半年我们用go开发了一个hybrid push服务，用户在线则借助长连接下发消息，不在线则借助厂商或第三方通道下发消息。
+在构建过程中遇到了些与 goroutine stack 相关的问题，这里就和大家扯一扯。</p>
+<a id="more"></a>
+<p>带着问题阅读，才能让阅读更加高效，首先让我们看下问题:</p>
+<ol>
+<li><em>goroutine stack多大呢？是固定的还是动态变化的呢?</em></li>
+<li><em>stack动态变化的话，什么时候扩容和缩容呢？如何实现的呢?</em></li>
+<li><em>对服务有什么影响吗？如何排查栈扩容缩容带来的问题呢?</em></li>
+</ol>
+<p>问题明确了，我们就开始往下扯呗。</p>
+<h2 id="栈大小"><a href="#栈大小" class="headerlink" title="栈大小"></a>栈大小</h2><p>在了解协程栈之前，我们先看下传统的Linux进程内存布局:</p>
+<p><img src="/images/linux-process-memory-layout.png" alt=""></p>
+<p>user stack的大小是固定的，Linux中默认为8192KB，运行时内存占用超过上限，程序会崩溃掉并报告segment错误。
+为了修复这个问题，我们可以调大内核参数中的stack size, 或者在创建线程时显式地传入所需要大小的内存块。
+这两种方案都有自己的优缺点, 前者比较简单但会影响到系统内所有的thread，后者需要开发者精确计算每个thread的大小, 负担比较高。</p>
+<p>有没有办法既不影响所有thread又不会给开发者增加太多的负担呢? 答案当然是有的，比如: 我们可以在函数调用处插桩，
+每次调用的时候检查当前栈的空间是否能够满足新函数的执行，满足的话直接执行，否则创建新的栈空间并将老的栈拷贝到新的栈然后再执行。 这个想法听起来很fancy &amp; simple,
+但当前的Linux thread模型却不能满足，实现的话只能够在用户空间实现，并且有不小的难度。</p>
+<p>go作为一门21世纪的现代语言，定位于简单高效，充分利用多核优势，解放工程师，自然不能够少了这个特性。它使用内置的运行时runtime优雅地解决了这个问题，
+每个routine（g0除外）在初始化时stack大小都为2KB, 运行过程中会根据不同的场景做动态的调整。</p>
+<h2 id="栈扩容和缩容"><a href="#栈扩容和缩容" class="headerlink" title="栈扩容和缩容"></a>栈扩容和缩容</h2><p>在介绍具体的栈处理细节之前，我们先了解下协程栈的内存布局和一些重要的术语:</p>
+<p><img src="/images/linux-goroutine-stack-layout.png" alt=""></p>
+<ul>
+<li>stack.lo: 栈空间的低地址</li>
+<li>stack.hi: 栈空间的高地址</li>
+<li>stackguard0: stack.lo + StackGuard, 用于stack overlow的检测</li>
+<li>StackGuard: 保护区大小，常量Linux上为880字节</li>
+<li>StackSmall: 常量大小为128字节，用于小函数调用的优化</li>
+</ul>
+<p>在判断栈空间是否需要扩容的时候，可以根据被调用函数栈帧的大小, 分为以下两种情况:</p>
+<ul>
+<li><p>小于StackSmall</p>
+<p> SP小于stackguard0, 执行栈扩容，否则直接执行。</p>
+</li>
+<li><p>大于StackSamll</p>
+<p> SP - Function’s Stack Frame Size + StackSmall 小于stackguard0, 执行栈扩容，否则直接执行。</p>
+</li>
+</ul>
+<blockquote>
+<p>runtime中还有个StackBig的常量，默认为4096，被调用函数栈帧大小大于StackBig的时候，
+一定会发生栈的扩容，这里就不再展开了。</p>
+</blockquote>
+<p>下面通过一个简单的函数调用，来观察下栈的处理:
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a, b := <span class="number">1</span>, <span class="number">2</span></span><br><span class="line">	_ = add1(a, b)</span><br><span class="line">	_ = add2(a, b)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">add1</span><span class="params">(x, y <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> x + y</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">add2</span><span class="params">(x, y <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	_ = <span class="built_in">make</span>([]<span class="keyword">byte</span>, <span class="number">200</span>)</span><br><span class="line">	<span class="keyword">return</span> x + y</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>禁用优化和内敛进行编译 <code>go tool compile -N -l -S stack.go &gt; stack.s</code> , 部分汇编代码如下:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&quot;&quot;.main t&#x3D;1 size&#x3D;112 args&#x3D;0x0 locals&#x3D;0x30</span><br><span class="line">	&#x2F;&#x2F; 栈大小为48，无参数</span><br><span class="line">	0x0000 00000 (stack.go:3)	TEXT	&quot;&quot;.main(SB), $48-0</span><br><span class="line">	&#x2F;&#x2F; 通过thread local storage获取当前g(g为goroutine的的数据结构)</span><br><span class="line">	0x0000 00000 (stack.go:3)	MOVQ	(TLS), CX</span><br><span class="line">	&#x2F;&#x2F; 比较SP和g.stackguard0</span><br><span class="line">	0x0009 00009 (stack.go:3)	CMPQ	SP, 16(CX)</span><br><span class="line">	&#x2F;&#x2F; 小于g.stackguard0，jump到105执行栈的扩容</span><br><span class="line">	0x000d 00013 (stack.go:3)	JLS	105</span><br><span class="line">	&#x2F;&#x2F; 继续执行</span><br><span class="line">	0x000f 00015 (stack.go:3)	SUBQ	$48, SP</span><br><span class="line">	0x0013 00019 (stack.go:3)	MOVQ	BP, 40(SP)</span><br><span class="line">	0x0018 00024 (stack.go:3)	LEAQ	40(SP), BP</span><br><span class="line">	&#x2F;&#x2F; 用于垃圾回收</span><br><span class="line">	0x001d 00029 (stack.go:3)	FUNCDATA	$0, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span><br><span class="line">	0x001d 00029 (stack.go:3)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span><br><span class="line">	0x001d 00029 (stack.go:4)	MOVQ	$1, &quot;&quot;.a+32(SP)</span><br><span class="line">	0x0026 00038 (stack.go:4)	MOVQ	$2, &quot;&quot;.b+24(SP)</span><br><span class="line">	&#x2F;&#x2F; 将a放入AX寄存器</span><br><span class="line">	0x002f 00047 (stack.go:5)	MOVQ	&quot;&quot;.a+32(SP), AX</span><br><span class="line">	&#x2F;&#x2F; 参数a压栈</span><br><span class="line">	0x0034 00052 (stack.go:5)	MOVQ	AX, (SP)</span><br><span class="line">	&#x2F;&#x2F; 将b放入AX寄存器</span><br><span class="line">	0x0038 00056 (stack.go:5)	MOVQ	&quot;&quot;.b+24(SP), AX</span><br><span class="line">	&#x2F;&#x2F; 参数b压栈</span><br><span class="line">	0x003d 00061 (stack.go:5)	MOVQ	AX, 8(SP)</span><br><span class="line">	0x0042 00066 (stack.go:5)	PCDATA	$0, $0</span><br><span class="line">	&#x2F;&#x2F; 调用add1</span><br><span class="line">	0x0042 00066 (stack.go:5)	CALL	&quot;&quot;.add1(SB)</span><br><span class="line">	&#x2F;&#x2F; 将a放入AX寄存器</span><br><span class="line">	0x0047 00071 (stack.go:6)	MOVQ	&quot;&quot;.a+32(SP), AX</span><br><span class="line">	&#x2F;&#x2F; 参数a压栈</span><br><span class="line">	0x004c 00076 (stack.go:6)	MOVQ	AX, (SP)</span><br><span class="line">	&#x2F;&#x2F; 将b放入AX寄存器</span><br><span class="line">	0x0050 00080 (stack.go:6)	MOVQ	&quot;&quot;.b+24(SP), AX</span><br><span class="line">	&#x2F;&#x2F; 参数b压栈</span><br><span class="line">	0x0055 00085 (stack.go:6)	MOVQ	AX, 8(SP)</span><br><span class="line">	0x005a 00090 (stack.go:6)	PCDATA	$0, $0</span><br><span class="line">	&#x2F;&#x2F; 调用add2</span><br><span class="line">	0x005a 00090 (stack.go:6)	CALL	&quot;&quot;.add2(SB)</span><br><span class="line">	0x005f 00095 (stack.go:7)	MOVQ	40(SP), BP</span><br><span class="line">	0x0064 00100 (stack.go:7)	ADDQ	$48, SP</span><br><span class="line">	0x0068 00104 (stack.go:7)	RET</span><br><span class="line">	0x0069 00105 (stack.go:7)	NOP</span><br><span class="line">	0x0069 00105 (stack.go:3)	PCDATA	$0, $-1</span><br><span class="line">	&#x2F;&#x2F; 调用runtime.morestack_noctxt执行栈扩容</span><br><span class="line">	0x0069 00105 (stack.go:3)	CALL	runtime.morestack_noctxt(SB)</span><br><span class="line">	&#x2F;&#x2F; 返回到函数开始处继续执行</span><br><span class="line">	0x006e 00110 (stack.go:3)	JMP	0</span><br><span class="line">    ...</span><br><span class="line">&quot;&quot;.add1 t&#x3D;1 size&#x3D;28 args&#x3D;0x18 locals&#x3D;0x0</span><br><span class="line">	&#x2F;&#x2F; 栈大小为0，参数为24字节, 栈帧小于StackSmall不进行栈空间判断直接执行</span><br><span class="line">	0x0000 00000 (stack.go:9)	TEXT	&quot;&quot;.add1(SB), $0-24</span><br><span class="line">	0x0000 00000 (stack.go:9)	FUNCDATA	$0, gclocals·54241e171da8af6ae173d69da0236748(SB)</span><br><span class="line">	0x0000 00000 (stack.go:9)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span><br><span class="line">	0x0000 00000 (stack.go:9)	MOVQ	$0, &quot;&quot;.~r2+24(FP)</span><br><span class="line">	0x0009 00009 (stack.go:10)	MOVQ	&quot;&quot;.x+8(FP), AX</span><br><span class="line">	0x000e 00014 (stack.go:10)	MOVQ	&quot;&quot;.y+16(FP), CX</span><br><span class="line">	0x0013 00019 (stack.go:10)	ADDQ	CX, AX</span><br><span class="line">	0x0016 00022 (stack.go:10)	MOVQ	AX, &quot;&quot;.~r2+24(FP)</span><br><span class="line">	0x001b 00027 (stack.go:10)	RET</span><br><span class="line">&quot;&quot;.add2 t&#x3D;1 size&#x3D;151 args&#x3D;0x18 locals&#x3D;0xd0</span><br><span class="line">	&#x2F;&#x2F; 栈大小为208字节，参数为24字节</span><br><span class="line">	0x0000 00000 (stack.go:13)	TEXT	&quot;&quot;.add2(SB), $208-24</span><br><span class="line">	&#x2F;&#x2F; 获取当前g</span><br><span class="line">	0x0000 00000 (stack.go:13)	MOVQ	(TLS), CX</span><br><span class="line">	&#x2F;&#x2F; 栈大小大于StackSmall, 计算 SP - FramSzie + StackSmall 并放入AX寄存器</span><br><span class="line">	0x0009 00009 (stack.go:13)	LEAQ	-80(SP), AX</span><br><span class="line">	&#x2F;&#x2F; 比较上面计算出来的值和g.stackguard0</span><br><span class="line">	0x000e 00014 (stack.go:13)	CMPQ	AX, 16(CX)</span><br><span class="line">	&#x2F;&#x2F; 小于g.stackguard0, jump到141执行栈的扩容</span><br><span class="line">	0x0012 00018 (stack.go:13)	JLS	141</span><br><span class="line">	&#x2F;&#x2F; 继续执行</span><br><span class="line">	0x0014 00020 (stack.go:13)	SUBQ	$208, SP</span><br><span class="line">	0x001b 00027 (stack.go:13)	MOVQ	BP, 200(SP)</span><br><span class="line">	0x0023 00035 (stack.go:13)	LEAQ	200(SP), BP</span><br><span class="line">	0x002b 00043 (stack.go:13)	FUNCDATA	$0, gclocals·54241e171da8af6ae173d69da0236748(SB)</span><br><span class="line">	0x002b 00043 (stack.go:13)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span><br><span class="line">	0x002b 00043 (stack.go:13)	MOVQ	$0, &quot;&quot;.~r2+232(FP)</span><br><span class="line">	0x0037 00055 (stack.go:14)	MOVQ	$0, &quot;&quot;..autotmp_0(SP)</span><br><span class="line">	0x003f 00063 (stack.go:14)	LEAQ	&quot;&quot;..autotmp_0+8(SP), DI</span><br><span class="line">	0x0044 00068 (stack.go:14)	XORPS	X0, X0</span><br><span class="line">	0x0047 00071 (stack.go:14)	DUFFZERO	$247</span><br><span class="line">	0x005a 00090 (stack.go:14)	LEAQ	&quot;&quot;..autotmp_0(SP), AX</span><br><span class="line">	0x005e 00094 (stack.go:14)	TESTB	AL, (AX)</span><br><span class="line">	0x0060 00096 (stack.go:14)	JMP	98</span><br><span class="line">	0x0062 00098 (stack.go:15)	MOVQ	&quot;&quot;.x+216(FP), AX</span><br><span class="line">	0x006a 00106 (stack.go:15)	MOVQ	&quot;&quot;.y+224(FP), CX</span><br><span class="line">	0x0072 00114 (stack.go:15)	ADDQ	CX, AX</span><br><span class="line">	0x0075 00117 (stack.go:15)	MOVQ	AX, &quot;&quot;.~r2+232(FP)</span><br><span class="line">	0x007d 00125 (stack.go:15)	MOVQ	200(SP), BP</span><br><span class="line">	0x0085 00133 (stack.go:15)	ADDQ	$208, SP</span><br><span class="line">	0x008c 00140 (stack.go:15)	RET</span><br><span class="line">	0x008d 00141 (stack.go:15)	NOP</span><br><span class="line">	0x008d 00141 (stack.go:13)	PCDATA	$0, $-1</span><br><span class="line">	&#x2F;&#x2F; 调用runtime.morestack_noctxt完成栈扩容</span><br><span class="line">	0x008d 00141 (stack.go:13)	CALL	runtime.morestack_noctxt(SB)</span><br><span class="line">	&#x2F;&#x2F; jump到函数开始的地方继续执行</span><br><span class="line">	0x0092 00146 (stack.go:13)	JMP	0</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>通过上面的汇编码，可以看到当被调用函数栈帧小于StackSmall的时候没有执行栈空间大小判断而是直接执行，在一定程度上优化了小函数的调用。
+大于StackSmall的，会执行栈空间大小判断，栈空间不足的时候，通过调用runtime.morestack_noctxt来完成栈的扩容，然后再重新开始执行函数。</p>
+<p>go在1.3之前栈扩容采用的是分段栈（Segemented Stack），在栈空间不够的时候新申请一个栈空间用于被调用函数的执行，
+执行后销毁新申请的栈空间并回到老的栈空间继续执行，当函数出现频繁调用（递归）时可能会引发hot split。为了避免hot split,
+1.3之后采用的是连续栈（Contiguous Stack），栈空间不足的时候申请一个2倍于当前大小的新栈，并把所有数据拷贝到新栈，
+接下来的所有调用执行都发生在新栈上。</p>
+<p>栈扩容和拷贝不是件容易的事情，涉及到很多内容和细节，这里只介绍下基本过程和算法意图，不会深入到所有细节。</p>
+<p>runtime.morestack_noctxt是用汇编实现的，以下是amd64架构的部分代码(runtime/asm_amd64.s):
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; Called during function prolog when more stack is needed.</span><br><span class="line">&#x2F;&#x2F;</span><br><span class="line">&#x2F;&#x2F; The traceback routines see morestack on a g0 as being</span><br><span class="line">&#x2F;&#x2F; the top of a stack (for example, morestack calling newstack</span><br><span class="line">&#x2F;&#x2F; calling the scheduler calling newm calling gc), so we must</span><br><span class="line">&#x2F;&#x2F; record an argument size. For that purpose, it has no arguments.</span><br><span class="line">TEXT runtime·morestack(SB),NOSPLIT,$0-0</span><br><span class="line">	&#x2F;&#x2F; Cannot grow scheduler stack (m-&gt;g0).</span><br><span class="line">	get_tls(CX)</span><br><span class="line">	MOVQ	g(CX), BX</span><br><span class="line">	MOVQ	g_m(BX), BX</span><br><span class="line">	MOVQ	m_g0(BX), SI</span><br><span class="line">	CMPQ	g(CX), SI</span><br><span class="line">	JNE	3(PC)</span><br><span class="line">	CALL	runtime·badmorestackg0(SB)</span><br><span class="line">	INT	$3</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; 省略signal stack、morebuf和sched的处理</span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Call newstack on m-&gt;g0&#39;s stack.</span><br><span class="line">	MOVQ	m_g0(BX), BX</span><br><span class="line">	MOVQ	BX, g(CX)</span><br><span class="line">	MOVQ	(g_sched+gobuf_sp)(BX), SP</span><br><span class="line">	PUSHQ	DX	&#x2F;&#x2F; ctxt argument</span><br><span class="line">	&#x2F;&#x2F; 调用runtime.newstack完成栈扩容</span><br><span class="line">	CALL	runtime·newstack(SB)</span><br><span class="line">	MOVQ	$0, 0x1003	&#x2F;&#x2F; crash if newstack returns</span><br><span class="line">	POPQ	DX	&#x2F;&#x2F; keep balance check happy</span><br><span class="line">	RET</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; morestack but not preserving ctxt.</span><br><span class="line">TEXT runtime·morestack_noctxt(SB),NOSPLIT,$0</span><br><span class="line">	MOVL	$0, DX</span><br><span class="line">	&#x2F;&#x2F; 调用morestack</span><br><span class="line">	JMP	runtime·morestack(SB)</span><br></pre></td></tr></table></figure>
+newstack是用go实现的，可读性很高也很有意思，大家有空可读读，基本过程就是分配一个2x大小的新栈，
+把数据拷贝到新栈，并用新栈替换到旧栈, 下面是部分代码(runtime/stack.go):
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Called from runtime·morestack when more stack is needed.</span></span><br><span class="line"><span class="comment">// Allocate larger stack and relocate to new stack.</span></span><br><span class="line"><span class="comment">// Stack growth is multiplicative, for constant amortized cost.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// g-&gt;atomicstatus will be Grunning or Gscanrunning upon entry.</span></span><br><span class="line"><span class="comment">// If the GC is trying to stop this g then it will set preemptscan to true.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// ctxt is the value of the context register on morestack. newstack</span></span><br><span class="line"><span class="comment">// will write it to g.sched.ctxt.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newstack</span><span class="params">(ctxt unsafe.Pointer)</span></span> &#123;</span><br><span class="line">	thisg := getg()</span><br><span class="line">	gp := thisg.m.curg</span><br><span class="line">	<span class="comment">// 扩容至现在的2倍</span></span><br><span class="line">	oldsize := <span class="keyword">int</span>(gp.stackAlloc)</span><br><span class="line">	newsize := oldsize * <span class="number">2</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// The goroutine must be executing in order to call newstack,</span></span><br><span class="line">	<span class="comment">// so it must be Grunning (or Gscanrunning).</span></span><br><span class="line">	casgstatus(gp, _Grunning, _Gcopystack)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// The concurrent GC will not scan the stack while we are doing the copy since</span></span><br><span class="line">	<span class="comment">// the gp is in a Gcopystack status.</span></span><br><span class="line">	<span class="comment">// 拷贝栈数据后切换到新栈</span></span><br><span class="line">	copystack(gp, <span class="keyword">uintptr</span>(newsize), <span class="literal">true</span>)</span><br><span class="line">	<span class="keyword">if</span> stackDebug &gt;= <span class="number">1</span> &#123;</span><br><span class="line">		<span class="built_in">print</span>(<span class="string">"stack grow done\n"</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 恢复执行</span></span><br><span class="line">	casgstatus(gp, _Gcopystack, _Grunning)</span><br><span class="line">	gogo(&amp;gp.sched)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// Copies gp's stack to a new stack of a different size.</span></span><br><span class="line"><span class="comment">// Caller must have changed gp status to Gcopystack.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// If sync is true, this is a self-triggered stack growth and, in</span></span><br><span class="line"><span class="comment">// particular, no other G may be writing to gp's stack (e.g., via a</span></span><br><span class="line"><span class="comment">// channel operation). If sync is false, copystack protects against</span></span><br><span class="line"><span class="comment">// concurrent channel operations.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">copystack</span><span class="params">(gp *g, newsize <span class="keyword">uintptr</span>, sync <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> gp.syscallsp != <span class="number">0</span> &#123;</span><br><span class="line">		throw(<span class="string">"stack growth not allowed in system call"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	old := gp.stack</span><br><span class="line">	<span class="keyword">if</span> old.lo == <span class="number">0</span> &#123;</span><br><span class="line">		throw(<span class="string">"nil stackbase"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	used := old.hi - gp.sched.sp</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 从缓存或堆分配新栈</span></span><br><span class="line">	<span class="built_in">new</span>, newstkbar := stackalloc(<span class="keyword">uint32</span>(newsize))</span><br><span class="line">	<span class="keyword">if</span> stackPoisonCopy != <span class="number">0</span> &#123;</span><br><span class="line">		fillstack(<span class="built_in">new</span>, <span class="number">0xfd</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Compute adjustment.</span></span><br><span class="line">	<span class="keyword">var</span> adjinfo adjustinfo</span><br><span class="line">	adjinfo.old = old</span><br><span class="line">	adjinfo.delta = <span class="built_in">new</span>.hi - old.hi</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Adjust sudogs, synchronizing with channel ops if necessary.</span></span><br><span class="line">	ncopy := used</span><br><span class="line">	<span class="keyword">if</span> sync &#123;</span><br><span class="line">		adjustsudogs(gp, &amp;adjinfo)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// sudogs can point in to the stack. During concurrent</span></span><br><span class="line">		<span class="comment">// shrinking, these areas may be written to. Find the</span></span><br><span class="line">		<span class="comment">// highest such pointer so we can handle everything</span></span><br><span class="line">		<span class="comment">// there and below carefully. (This shouldn't be far</span></span><br><span class="line">		<span class="comment">// from the bottom of the stack, so there's little</span></span><br><span class="line">		<span class="comment">// cost in handling everything below it carefully.)</span></span><br><span class="line">		adjinfo.sghi = findsghi(gp, old)</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Synchronize with channel ops and copy the part of</span></span><br><span class="line">		<span class="comment">// the stack they may interact with.</span></span><br><span class="line">		ncopy -= syncadjustsudogs(gp, used, &amp;adjinfo)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 拷贝栈到新的位置</span></span><br><span class="line">	memmove(unsafe.Pointer(<span class="built_in">new</span>.hi-ncopy), unsafe.Pointer(old.hi-ncopy), ncopy)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 切换到新栈</span></span><br><span class="line">	gp.stack = <span class="built_in">new</span></span><br><span class="line">	gp.stackguard0 = <span class="built_in">new</span>.lo + _StackGuard <span class="comment">// <span class="doctag">NOTE:</span> might clobber a preempt request</span></span><br><span class="line">	gp.sched.sp = <span class="built_in">new</span>.hi - used</span><br><span class="line">	oldsize := gp.stackAlloc</span><br><span class="line">	gp.stackAlloc = newsize</span><br><span class="line">	gp.stkbar = newstkbar</span><br><span class="line">	gp.stktopsp += adjinfo.delta</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Adjust pointers in the new stack.</span></span><br><span class="line">	gentraceback(^<span class="keyword">uintptr</span>(<span class="number">0</span>), ^<span class="keyword">uintptr</span>(<span class="number">0</span>), <span class="number">0</span>, gp, <span class="number">0</span>, <span class="literal">nil</span>, <span class="number">0x7fffffff</span>, adjustframe, noescape(unsafe.Pointer(&amp;adjinfo)), <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">	gcUnlockStackBarriers(gp)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 释放旧栈</span></span><br><span class="line">	<span class="keyword">if</span> stackPoisonCopy != <span class="number">0</span> &#123;</span><br><span class="line">		fillstack(old, <span class="number">0xfc</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	stackfree(old, oldsize)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+扯完了扩容，我们来看看缩容。一些long running的goroutine可能由于某次函数调用中引发了栈的扩容，
+被调用函数返回后很大部分空间都未被利用，为了解决这样的问题，需要能够对栈进行收缩，以节约内存提高利用率。</p>
+<p>栈收缩不是在函数调用时发生的，是由垃圾回收器在垃圾回收时主动触发的。基本过程是计算当前使用的空间，小于栈空间的1/4的话，
+执行栈的收缩，将栈收缩为现在的1/2，否则直接返回。下面是栈收缩的部分代码(runtime/stack.go):
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">shrinkstack</span><span class="params">(gp *g)</span></span> &#123;</span><br><span class="line">	gstatus := readgstatus(gp)</span><br><span class="line">	<span class="keyword">if</span> gstatus&amp;^_Gscan == _Gdead &#123;</span><br><span class="line">		<span class="keyword">if</span> gp.stack.lo != <span class="number">0</span> &#123;</span><br><span class="line">			<span class="comment">// Free whole stack - it will get reallocated</span></span><br><span class="line">			<span class="comment">// if G is used again.</span></span><br><span class="line">			stackfree(gp.stack, gp.stackAlloc)</span><br><span class="line">			gp.stack.lo = <span class="number">0</span></span><br><span class="line">			gp.stack.hi = <span class="number">0</span></span><br><span class="line">			gp.stkbar = <span class="literal">nil</span></span><br><span class="line">			gp.stkbarPos = <span class="number">0</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 收缩目标是一半大小</span></span><br><span class="line">	oldsize := gp.stackAlloc</span><br><span class="line">	newsize := oldsize / <span class="number">2</span></span><br><span class="line">	<span class="comment">// Don't shrink the allocation below the minimum-sized stack</span></span><br><span class="line">	<span class="comment">// allocation.</span></span><br><span class="line">	<span class="keyword">if</span> newsize &lt; _FixedStack &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果使用空间超过1/4, 则不收缩</span></span><br><span class="line">	avail := gp.stack.hi - gp.stack.lo</span><br><span class="line">	<span class="keyword">if</span> used := gp.stack.hi - gp.sched.sp + _StackLimit; used &gt;= avail/<span class="number">4</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 用较小的栈替换当前的栈</span></span><br><span class="line">	copystack(gp, newsize, <span class="literal">false</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="扩缩容影响"><a href="#扩缩容影响" class="headerlink" title="扩缩容影响"></a>扩缩容影响</h2><p>在正常的http service、rpc service中，栈扩容和收缩的影响几乎可以忽略不计，大家在排查问题的时候可以直接跳过。
+在一些对内存占用、延时敏感的服务中，要特别注意，否则将可能面临内存占用高、服务不稳定的状况。</p>
+<p>我们用go构建的hybrid push服务，每个连接都是全双工的，使用两个routine来分别处理读写，刚开始上线压测时内存占用非常高，甚至出现OOM的情况。
+刚开始怀疑堆占用过高，通过runtime和pprof排查，堆占用和预期设想的一样，
+并没有太多的问题 ，一度非常头大。后来通过<code>curl -s http://localhost:port/debug/pprof/heap?debug=1 | grep -A 20 runtime.MemStats</code>
+查看MemStats状态，发现Stack占用很高甚至达到了20G，基本上就确定了问题是由栈造成的，接下来就可以通过工具来定位具体的原因了。</p>
+<p>我们借助了perf和FlameGraph来trace函数调用，下面是部分截图:
+<img src="/images/taco-function-trace.jpeg" alt=""></p>
+<p><img src="/images/taco-grpc-invoke-trace.jpeg" alt=""></p>
+<p>可以看到在rpc调用(grpc invoke)时，栈会发生扩容(runtime.morestack)，也就意味着在读写routine内的任何rpc调用都会导致栈扩容，
+占用的内存空间会扩大为原来的两倍，4kB的栈会变为8kB，100w的连接的内存占用会从8G扩大为16G（全双工，不考虑其他开销），这简直是噩梦。</p>
+<p>解决这个问题的方案有很多，我们选择了channel和worker group，读写routine只负责流量和连接处理，逻辑处理的部分完全交给worker。
+优化后，读写routine各占用4KB内存，运行过程中都不会出现栈扩容的问题，单机(24core 32G memory)可以承载100W连接和每秒2~3w消息的发送(512 ~ 1024 byte)。</p>
+<p>上面介绍到栈缩容的目标是提高内存利用率，但在缩容过程中会存在栈拷贝和写屏障(write barrier)，对于一些准实时应用可能会存在一些影响。
+好在go提供了可设置的参数，需要的话大家可以通过设置环境变量 GODEBUG=gcshrinkstackoff=1 来关闭栈缩容。关闭栈缩容后，
+需要承担栈持续增长的风险，在关闭前需要慎重考虑。</p>
+<p><em>如果想查看程序运行过程中栈alloc、扩容、拷贝和缩容细节的话，可以通过设置stackDebug变量(runtime/stack.go)为非0，
+然后重新编译程序（记得要重新编译runtime, 编译时加入<code>-a</code>参数），就可以看到所有栈操作的细节了。
+暂时没有找到更好的设置方式比如GODEBUG之类的，如果大家更好的办法，欢迎告诉我。</em></p>
+<h2 id="备注"><a href="#备注" class="headerlink" title="备注"></a>备注</h2><p>上面的所有常量和代码，都是基于Linux x86_64架构，go 1.8.3版本的。</p>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><ol>
+<li><a href="https://blog.cloudflare.com/how-stacks-are-handled-in-go/" target="_blank" rel="external nofollow noopener noreferrer">https://blog.cloudflare.com/how-stacks-are-handled-in-go/</a></li>
+<li><a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external nofollow noopener noreferrer">http://www.brendangregg.com/perf.html</a></li>
+<li><a href="https://github.com/qyuhen/book" target="_blank" rel="external nofollow noopener noreferrer">https://github.com/qyuhen/book</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Thread_(computing)" target="_blank" rel="external nofollow noopener noreferrer">https://en.wikipedia.org/wiki/Thread_(computing)</a></li>
+<li><a href="https://golang.org/doc/asm" target="_blank" rel="external nofollow noopener noreferrer">https://golang.org/doc/asm</a></li>
+<li><a href="https://0xax.github.io/" target="_blank" rel="external nofollow noopener noreferrer">https://0xax.github.io/</a></li>
+</ol>
+<h2 id="变更记录"><a href="#变更记录" class="headerlink" title="变更记录"></a>变更记录</h2><ul>
+<li><p>2017-08-13</p>
+<p>修复goroutine栈内存布局图片中的地址标注，感谢<a href="https://github.com/baozh" target="_blank" rel="external nofollow noopener noreferrer">@baozh</a>的指正。</p>
+</li>
+</ul>
+
+        </div>
+      </article>
+    </div>
+    <!-- Comments -->
+    <div class="container">
+      
+<section id="comment">
+  <!-- <h1 class="title">Comments</h1> -->
+
+  
+  <div id="disqus_thread">
+    <script type="text/javascript">
+    var disqus_config = function () {
+          this.page.url = window.location.href;
+          this.page.identifier = 'post-goroutine-stack';
+          this.page.title = '聊一聊goroutine stack';
+      };
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+
+    </div>
+    <!-- Pre or Next -->
+    <div class="nav-links">
+      
+        <div class="nav-previous">
+          <a href="/posts/b83b5da/" rel="prev"><span class="meta-arraw meta-arraw-left"></span> Older Posts</a>
+        </div>
+      
+      
+        <div class="nav-next">
+          <a href="/posts/28c07e17/" rel="prev">Newer Posts <span class="meta-arraw meta-arraw-right"></span></a>
+        </div>
+      
+    </div>
+
+  </div>
+</div>
+
+
+  <!-- Footer -->
+  <!-- Footer-widgets -->
+<div class="footer-widgets">
+  <div class="row inside-wrapper">
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">关于本站</h1>
+        <div class="custom-widget-content">
+          
+          Keep learning forever
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Contact</h1>
+        <div class="widget-text">
+          
+            
+              <a href="https://github.com/kirk91" class="icon icon-github" target="_blank" rel="external nofollow noopener noreferrer">github</a>
+            
+              <a href="mailto:kirk91.han@gmail.com" class="icon icon-mail" target="_blank" rel="external nofollow noopener noreferrer">mail</a>
+            
+          
+        </div>
+      </aside>
+    </div>
+    <div class="col-1-3">
+      <aside>
+        <h1 class="widget-title">Search</h1>
+        <div class="widget-text">
+          <form onsubmit="return appDaily.submitSearch('')">
+            <p>
+              <input type="text" placeholder="search..." id="homeSearchInput">
+            </p>
+            <!-- <input type="submit" value="GO"> -->
+          </form>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<!-- Footer -->
+<footer class="site-info">
+  <p>
+    <span>coding & life &copy; 2022</span>
+    
+      <span class="split">|</span>
+      <span>Powered by <a href="https://hexo.io/" target="_blank" rel="external nofollow noopener noreferrer">Hexo</a> with Theme <a href="https://github.com/GallenHu/hexo-theme-Daily" target="_blank" rel="external nofollow noopener noreferrer">Daily</a></span>
+    
+  </p>
+</footer>
+
+
+  <!-- After footer scripts -->
+  <!-- scripts -->
+
+<script src="/js/app.js"></script>
+
+
+<script>
+  var disqus_shortname = 'kirk91';
+
+  
+  var disqus_url = 'https://kirk91.github.io/posts/2d571d09/';
+  
+
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+
+<!-- google_analytics start -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89547051-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!-- google_analytics end -->
+
+
+
+</body>
+
+</html>
