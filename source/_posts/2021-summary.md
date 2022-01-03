@@ -35,33 +35,15 @@ date: 2022-01-03 15:34:22
 
 去年为了摇新房领了结婚证，今年就把该走的流程都走完啦。像一般家庭一样，买三金、对戒、钻戒（原先觉得买三金钻戒没啥用，后来想想还是得买一下，买了后还是挺开心的），订婚，拍婚纱照，结婚，度蜜月，一气呵成。
 
-[![Wechat-IMG68.jpg](https://i.postimg.cc/05nBTnBs/Wechat-IMG68.jpg)](https://postimg.cc/JtyxJN86)
-
-[![Wechat-IMG67.jpg](https://i.postimg.cc/7YQQ664t/Wechat-IMG67.jpg)](https://postimg.cc/KRB5pmRt)
-
 [![Wechat-IMG62.jpg](https://i.postimg.cc/SKJ5d4xt/Wechat-IMG62.jpg)](https://postimg.cc/jWYZqGNz)
-
-[![Wechat-IMG58.jpg](https://i.postimg.cc/CxG8Bn0F/Wechat-IMG58.jpg)](https://postimg.cc/v4mTCBDj)
-
-
-[![Wechat-IMG61.jpg](https://i.postimg.cc/sDPJhg54/Wechat-IMG61.jpg)](https://postimg.cc/JGnJwm6s)
 
 [![Wechat-IMG66.jpg](https://i.postimg.cc/MHwX1q8h/Wechat-IMG66.jpg)](https://postimg.cc/njdHJ8rk)
 
-[![Wechat-IMG65.jpg](https://i.postimg.cc/g04hzwFn/Wechat-IMG65.jpg)](https://postimg.cc/qthqQv7T)
-
 [![Wechat-IMG60.jpg](https://i.postimg.cc/3xKFCQB5/Wechat-IMG60.jpg)](https://postimg.cc/HVhMdKRB)
-
 
 [![Wechat-IMG59.jpg](https://i.postimg.cc/xTVR8zNd/Wechat-IMG59.jpg)](https://postimg.cc/dDndSDBM)
 
 [![Wechat-IMG54.jpg](https://i.postimg.cc/dQfrzKnK/Wechat-IMG54.jpg)](https://postimg.cc/SjWnM3wZ)
-
-[![Wechat-IMG53.jpg](https://i.postimg.cc/cCzRmpk0/Wechat-IMG53.jpg)](https://postimg.cc/y3F36bzb)
-
-[![Wechat-IMG69.jpg](https://i.postimg.cc/65m2msVG/Wechat-IMG69.jpg)](https://postimg.cc/Mv1pnFFW)
-
-[![Wechat-IMG70.jpg](https://i.postimg.cc/vBbcVGyC/Wechat-IMG70.jpg)](https://postimg.cc/67bWsJyh)
 
 度蜜月时还好疫情没扩散严重，一路去了成都、九寨沟、黄龙、重庆，最早去九寨沟前还有些抗拒，因为担心地震(2017年突发的) 😂 ，但去了后觉得风景是真的真的美，顺带还体验了成都的巴适生活，公园喝茶吃瓜子，总的来说在疫情下还能跑这么大一圈也很是奢侈了。
 
@@ -85,14 +67,10 @@ date: 2022-01-03 15:34:22
 
 [![Wechat-IMG46.jpg](https://i.postimg.cc/K8K2JwQj/Wechat-IMG46.jpg)](https://postimg.cc/75ydLBFr)
 
-[![Wechat-IMG47.jpg](https://i.postimg.cc/gjMCKHZ3/Wechat-IMG47.jpg)](https://postimg.cc/xNzpfHgd)
-
 
 ## 户口
 
 一直纠结到底在杭州还是上海定居，去年在上海摇到新房后，就决定定居上海啦。要定居上海，就又去找了房东办居住证，顺带吐槽下办居住证还要每年再花钱。还好从去年末开始上海开放了引进人才的落户名额，老婆公司属于高薪企业，又已经在公司呆了三年，符合申请条件。我作为配偶竟然也随调成功，也算是个意外收获，也算是解决了一件大事情。
-
-[![Wechat-IMG56.jpg](https://i.postimg.cc/Przf1WCF/Wechat-IMG56.jpg)](https://postimg.cc/Ln5MpZBz)
 
 [![Wechat-IMG57.jpg](https://i.postimg.cc/PrkrL35w/Wechat-IMG57.jpg)](https://postimg.cc/t72HwzPq)
 
